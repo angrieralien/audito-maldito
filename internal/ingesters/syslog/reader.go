@@ -16,6 +16,15 @@ type Syslog struct {
 	EventW *auditevent.EventWriter
 }
 
+func NewSyslog(nodeName string, machineID string, logins chan common.RemoteUserLogin, eventW *auditevent.EventWriter) Syslog {
+	return Syslog{
+		NodeName:  nodeName,
+		MachineID: machineID,
+		Logins:    logins,
+		EventW:    eventW,
+	}
+}
+
 func (s *Syslog) NewLine(ctx context.Context, entryMsg string, pid string) error {
 	return processEntry(&processEntryConfig{
 		ctx:       ctx,

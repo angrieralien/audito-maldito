@@ -1,12 +1,18 @@
 package app
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-logr/zapr"
 	"github.com/metal-toolbox/auditevent"
 	"github.com/metal-toolbox/auditevent/helpers"
@@ -18,9 +24,13 @@ import (
 	"github.com/metal-toolbox/audito-maldito/internal/auditd"
 	"github.com/metal-toolbox/audito-maldito/internal/auditd/dirreader"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
+<<<<<<< HEAD
 	"github.com/metal-toolbox/audito-maldito/internal/journald"
 	"github.com/metal-toolbox/audito-maldito/internal/processors"
 	"github.com/metal-toolbox/audito-maldito/internal/processors/rocky"
+=======
+	"github.com/metal-toolbox/audito-maldito/internal/ingesters/syslog"
+>>>>>>> wip: rough journald refactor
 	"github.com/metal-toolbox/audito-maldito/internal/util"
 )
 
@@ -80,10 +90,13 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	logger = l.Sugar()
 
 	auditd.SetLogger(logger)
+<<<<<<< HEAD
 	journald.SetLogger(logger)
 	processors.SetLogger(logger)
+=======
+>>>>>>> wip: rough journald refactor
 
-	distro, err := util.Distro()
+	_, err = util.Distro() // dont need distro
 	if err != nil {
 		return fmt.Errorf("failed to get os distro type: %w", err)
 	}
@@ -135,6 +148,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	logger.Infoln("starting workers...")
 
+<<<<<<< HEAD
 	if distro == util.DistroRocky {
 		eg.Go(func() error {
 			defer logger.Infoln("rocky worker exited")
@@ -178,10 +192,77 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 						})
 						if err != nil {
 							return err
+=======
+	s := syslog.NewSyslog(nodename, mid, logins, eventWriter)
+	h.AddReadiness()
+
+	//////////////////// rsyslog poc ////////////////////////////////////////
+	// Create new watcher.
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer watcher.Close()
+
+	eg.Go(func() error {
+		file, err := os.OpenFile("/var/log/audit/audit-pipe", os.O_RDONLY, os.ModeNamedPipe)
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		r := bufio.NewReader(file)
+		currentLog := bytes.NewBufferString("")
+		buf := make([]byte, 0, 4*1024)
+
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					break
+				}
+				if event.Has(fsnotify.Write) {
+					for {
+
+						n, err := r.Read(buf[:cap(buf)])
+						sp := strings.Split(string(buf[:n]), "\n")
+
+						if len(sp) > 1 {
+							entry := currentLog.String() + sp[0]
+							entrySplit := strings.Split(entry, " ")
+							pid := entrySplit[0]
+							logMsg := strings.Join(entrySplit[1:], "")
+							s.NewLine(ctx, logMsg, pid)
+							for _, line := range sp[1 : len(sp)-1] {
+								entrySplit := strings.Split(line, " ")
+								pid = entrySplit[0]
+								logMsg = strings.Join(entrySplit[1:], "")
+								s.NewLine(ctx, logMsg, pid)
+							}
+							currentLog.Truncate(0)
+							currentLog.WriteString(sp[len(sp)-1])
+
+						} else {
+							currentLog.Write(buf[:n])
+						}
+
+						if err != nil {
+							logger.Errorln(err)
+						}
+
+						if n == 0 {
+							if err == nil {
+								break
+							}
+							if err == io.EOF {
+								break
+							}
+							logger.Fatal(err)
+>>>>>>> wip: rough journald refactor
 						}
 					}
 				}
 			}
+<<<<<<< HEAD
 		})
 	} else {
 		h.AddReadiness()
@@ -204,6 +285,16 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 			return err
 		})
 	}
+=======
+		}
+	})
+>>>>>>> wip: rough journald refactor
+
+	err = watcher.Add("/var/log/audit/audit-pipe")
+	if err != nil {
+		log.Fatal(err)
+	}
+	//////////////////// rsyslog poc ////////////////////////////////////////
 
 	h.AddReadiness()
 	eg.Go(func() error {
