@@ -1,4 +1,4 @@
-package auditd
+package dirreader
 
 import (
 	"bytes"

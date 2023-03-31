@@ -1,4 +1,4 @@
-package journald
+package sshd
 
 import (
 	"context"
@@ -346,7 +346,7 @@ func TestEntryProcessing(t *testing.T) {
 			enc := &testAuditEventEncoder{t: t}
 			w := auditevent.NewAuditEventWriter(enc)
 
-			err := processEntry(&processEntryConfig{
+			err := processEntry(&SshdProcessor{
 				ctx:       ctx,
 				logins:    make(chan common.RemoteUserLogin, 1),
 				logEntry:  tt.args.logentry,

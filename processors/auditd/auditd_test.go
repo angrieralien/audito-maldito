@@ -33,12 +33,11 @@ func TestAuditd_Read_RemoteLoginError(t *testing.T) {
 			events: events,
 			t:      t,
 		}),
-		Health: common.NewSingleReadinessHealth(),
 	}
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	select {
@@ -77,12 +76,11 @@ func TestAuditd_Read_ParseAuditLogError(t *testing.T) {
 			events: events,
 			t:      t,
 		}),
-		Health: common.NewSingleReadinessHealth(),
 	}
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	err := <-errs
@@ -122,14 +120,13 @@ func TestAuditd_Read_AuditEventError(t *testing.T) {
 			events: events,
 			t:      t,
 		}),
-		Health: common.NewSingleReadinessHealth(),
 	}
 
 	cancelEventWFn()
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	allowWritesFn()
@@ -154,7 +151,6 @@ func TestMaintainReassemblerLoop_Cancel(t *testing.T) {
 	reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 		ctx:     ctx,
 		results: make(chan reassembleAuditdEventResult),
-		after:   time.Time{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +172,6 @@ func TestMaintainReassemblerLoop_Maintain(t *testing.T) {
 	reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 		ctx:     ctx,
 		results: make(chan reassembleAuditdEventResult),
-		after:   time.Time{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -196,7 +191,6 @@ func TestMaintainReassemblerLoop_ReasemblerClosed(t *testing.T) {
 	reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 		ctx:     ctx,
 		results: make(chan reassembleAuditdEventResult),
-		after:   time.Time{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -218,7 +212,6 @@ func TestParseAuditLogs_Cancel(t *testing.T) {
 	reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 		ctx:     ctx,
 		results: results,
-		after:   time.Time{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -244,7 +237,6 @@ func TestParseAuditLogs_EmptyAuditLine(t *testing.T) {
 	reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 		ctx:     ctx,
 		results: results,
-		after:   time.Time{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -279,7 +271,6 @@ func TestParseAuditLogs_LogParseFailure(t *testing.T) {
 	reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 		ctx:     ctx,
 		results: results,
-		after:   time.Time{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -306,7 +297,6 @@ func TestReassemblerCB_ReassemblyComplete_Error(t *testing.T) {
 	rcb := &reassemblerCB{
 		ctx:     ctx,
 		results: results,
-		after:   time.Time{},
 	}
 
 	rcb.ReassemblyComplete(nil)
@@ -332,7 +322,6 @@ func TestReassemblerCB_ReassemblyComplete_CancelOnError(t *testing.T) {
 	rcb := &reassemblerCB{
 		ctx:     ctx,
 		results: results,
-		after:   time.Time{},
 	}
 
 	cancelFn()
@@ -357,13 +346,12 @@ func TestReassemblerCB_ReassemblyComplete_EventIsBefore(t *testing.T) {
 	rcb := &reassemblerCB{
 		ctx:     ctx,
 		results: results,
-		after:   time.Now(),
 	}
 
 	rcb.ReassemblyComplete([]*auparse.AuditMessage{
 		{
 			RecordType: auparse.AUDIT_LOGIN,
-			Timestamp:  rcb.after.Add(-time.Minute),
+			Timestamp:  time.Now(),
 		},
 	})
 
@@ -386,7 +374,6 @@ func TestReassemblerCB_ReassemblyComplete_CancelOnSend(t *testing.T) {
 	rcb := &reassemblerCB{
 		ctx:     ctx,
 		results: results,
-		after:   time.Now(),
 	}
 
 	cancelFn()
@@ -394,7 +381,7 @@ func TestReassemblerCB_ReassemblyComplete_CancelOnSend(t *testing.T) {
 	rcb.ReassemblyComplete([]*auparse.AuditMessage{
 		{
 			RecordType: auparse.AUDIT_LOGIN,
-			Timestamp:  rcb.after.Add(time.Minute),
+			Timestamp:  time.Now(),
 		},
 	})
 
@@ -449,7 +436,6 @@ type=PROCTITLE msg=audit(1671230063.745:657579): proctitle=2F7573722F7362696E2F6
 			reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 				ctx:     ctx,
 				results: results,
-				after:   time.Time{},
 			})
 			if err != nil {
 				t.Fatalf("failed to create resassembler - %s", err)

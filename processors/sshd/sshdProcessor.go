@@ -1,9 +1,11 @@
-package journald
+package sshd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -67,6 +69,52 @@ func SetLogger(l *zap.SugaredLogger) {
 	logger = l
 }
 
+type syslogMessage struct {
+	PID     string
+	Message string
+}
+
+func (s *SshdProcessor) Process(ctx context.Context, r io.Reader, currentLog *bytes.Buffer, buf []byte) (int, error) {
+	n, err := r.Read(buf[:cap(buf)])
+	sp := strings.Split(string(buf[:n]), "\n")
+
+	if len(sp) > 1 {
+		sm := s.ParseSyslogMessage(currentLog.String() + sp[0])
+		s.ProcessEntry(ctx, sm)
+		for _, line := range sp[1 : len(sp)-1] {
+			sm := s.ParseSyslogMessage(line)
+			s.ProcessEntry(ctx, sm)
+		}
+		currentLog.Truncate(0)
+		currentLog.WriteString(sp[len(sp)-1])
+
+	} else {
+		currentLog.Write(buf[:n])
+	}
+	return n, err
+}
+
+func (s *SshdProcessor) ParseSyslogMessage(entry string) syslogMessage {
+	entrySplit := strings.Split(entry, " ")
+	pid := entrySplit[0]
+	logMsg := strings.Join(entrySplit[1:], " ")
+	logMsg = strings.TrimLeft(logMsg, " ")
+	return syslogMessage{PID: pid, Message: logMsg}
+}
+
+func (s *SshdProcessor) ProcessEntry(ctx context.Context, sm syslogMessage) error {
+	return processEntry(&SshdProcessor{
+		ctx:       ctx,
+		logins:    s.logins,
+		logEntry:  sm.Message,
+		nodeName:  s.nodeName,
+		machineID: s.machineID,
+		when:      time.Now(),
+		pid:       sm.PID,
+		eventW:    s.eventW,
+	})
+}
+
 func extraDataWithoutCA(alg, keySum string) (*json.RawMessage, error) {
 	extraData := map[string]string{
 		idxLoginAlg:  alg,
@@ -89,7 +137,17 @@ func extraDataWithCA(alg, keySum, certSerial, caData string) (*json.RawMessage, 
 	return &rawmsg, err
 }
 
-type processEntryConfig struct {
+func NewSshdProcessor(ctx context.Context, logins chan<- common.RemoteUserLogin, nodeName string, machineID string, eventW *auditevent.EventWriter) *SshdProcessor {
+	return &SshdProcessor{
+		ctx:       ctx,
+		logins:    logins,
+		nodeName:  nodeName,
+		machineID: machineID,
+		eventW:    eventW,
+	}
+}
+
+type SshdProcessor struct {
 	ctx       context.Context //nolint
 	logins    chan<- common.RemoteUserLogin
 	logEntry  string
@@ -100,8 +158,8 @@ type processEntryConfig struct {
 	eventW    *auditevent.EventWriter
 }
 
-func processEntry(config *processEntryConfig) error {
-	var entryFunc func(*processEntryConfig) error
+func processEntry(config *SshdProcessor) error {
+	var entryFunc func(*SshdProcessor) error
 	switch {
 	case strings.HasPrefix(config.logEntry, "Accepted publickey"):
 		entryFunc = processAcceptPublicKeyEntry
@@ -131,7 +189,7 @@ func addEventInfoForUnknownUser(evt *auditevent.AuditEvent, alg, keySum string) 
 	}
 }
 
-func processAcceptPublicKeyEntry(config *processEntryConfig) error {
+func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 	matches := loginRE.FindStringSubmatch(config.logEntry)
 	if matches == nil {
 		logger.Infoln("got login entry with no matches for identifiers")
@@ -257,7 +315,7 @@ func getCertificateInvalidReason(logentry string) string {
 	return logentry[prefixLen:]
 }
 
-func processCertificateInvalidEntry(config *processEntryConfig) error {
+func processCertificateInvalidEntry(config *SshdProcessor) error {
 	reason := getCertificateInvalidReason(config.logEntry)
 
 	// TODO(jaosorior): Figure out smart way of getting the source
@@ -314,7 +372,7 @@ func extraDataForInvalidCert(reason string) (*json.RawMessage, error) {
 	return &rawmsg, err
 }
 
-func processNotInAllowUsersEntry(config *processEntryConfig) error {
+func processNotInAllowUsersEntry(config *SshdProcessor) error {
 	matches := notInAllowUsersRE.FindStringSubmatch(config.logEntry)
 	if matches == nil {
 		logger.Infoln("got login entry with no matches for not-in-allow-users")
@@ -352,7 +410,7 @@ func processNotInAllowUsersEntry(config *processEntryConfig) error {
 	return nil
 }
 
-func processInvalidUserEntry(config *processEntryConfig) error {
+func processInvalidUserEntry(config *SshdProcessor) error {
 	matches := invalidUserRE.FindStringSubmatch(config.logEntry)
 	if matches == nil {
 		logger.Infoln("got login entry with no matches for invalid-user")

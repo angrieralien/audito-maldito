@@ -1,4 +1,4 @@
-package app
+package cmd
 
 import (
 	"context"
@@ -14,9 +14,13 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/metal-toolbox/audito-maldito/internal/auditd"
+	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
-	"github.com/metal-toolbox/audito-maldito/internal/journald"
+	"github.com/metal-toolbox/audito-maldito/processors/auditd"
+	"github.com/metal-toolbox/audito-maldito/processors/auditlog"
+
+	"github.com/metal-toolbox/audito-maldito/processors/sshd"
+
 	"github.com/metal-toolbox/audito-maldito/internal/util"
 )
 
@@ -32,7 +36,7 @@ OPTIONS
 
 var logger *zap.SugaredLogger
 
-func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig *zap.Config) error {
+func Run(ctx context.Context, osArgs []string, optLoggerConfig *zap.Config) error {
 	var bootID string
 	var auditlogpath string
 	var auditLogDirPath string
@@ -75,91 +79,89 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	logger = l.Sugar()
 
 	auditd.SetLogger(logger)
-	journald.SetLogger(logger)
 
-	distro, err := util.Distro()
+	_, err = util.Distro() // dont need distro
 	if err != nil {
-		return fmt.Errorf("failed to get os distro type: %w", err)
+		err := fmt.Errorf("failed to get os distro type: %w", err)
+		logger.Errorf(err.Error())
+		return err
 	}
 
 	mid, miderr := common.GetMachineID()
 	if miderr != nil {
-		return fmt.Errorf("failed to get machine id: %w", miderr)
+		err := fmt.Errorf("failed to get machine id: %w", miderr)
+		logger.Errorf(err.Error())
+		return err
 	}
 
-	nodename, nodenameerr := common.GetNodeName()
+	nodeName, nodenameerr := common.GetNodeName()
 	if nodenameerr != nil {
-		return fmt.Errorf("failed to get node name: %w", nodenameerr)
+		err := fmt.Errorf("failed to get node name: %w", nodenameerr)
+		logger.Errorf(err.Error())
+		return err
 	}
 
 	if err := common.EnsureFlushDirectory(); err != nil {
-		return fmt.Errorf("failed to ensure flush directory: %w", err)
+		err := fmt.Errorf("failed to ensure flush directory: %w", err)
+		logger.Errorf(err.Error())
+		return err
 	}
 
 	eg, groupCtx := errgroup.WithContext(ctx)
 
 	auf, auditfileerr := helpers.OpenAuditLogFileUntilSuccessWithContext(groupCtx, auditlogpath, zapr.NewLogger(l))
 	if auditfileerr != nil {
-		return fmt.Errorf("failed to open audit log file: %w", auditfileerr)
-	}
-
-	logDirReader, err := auditd.StartLogDirReader(groupCtx, auditLogDirPath)
-	if err != nil {
-		return fmt.Errorf("failed to create linux audit dir reader for '%s' - %w",
-			auditLogDirPath, err)
-	}
-
-	h.AddReadiness()
-	go func() {
-		<-logDirReader.InitFilesDone()
-		h.OnReady()
-	}()
-
-	eg.Go(func() error {
-		err := logDirReader.Wait()
-		if logger.Level().Enabled(zap.DebugLevel) {
-			logger.Debugf("linux audit log dir reader worker exited (%v)", err)
-		}
+		err := fmt.Errorf("failed to open audit log file: %w", auditfileerr)
+		logger.Errorf(err.Error())
 		return err
-	})
+	}
 
-	lastReadJournalTS := lastReadJournalTimeStamp()
 	eventWriter := auditevent.NewDefaultAuditEventWriter(auf)
 	logins := make(chan common.RemoteUserLogin)
 
 	logger.Infoln("starting workers...")
 
-	h.AddReadiness()
-	eg.Go(func() error {
-		jp := journald.Processor{
-			BootID:    bootID,
-			MachineID: mid,
-			NodeName:  nodename,
-			Distro:    distro,
-			EventW:    eventWriter,
-			Logins:    logins,
-			CurrentTS: lastReadJournalTS,
-			Health:    h,
-		}
+	auditLogChan := make(chan string)
+	defer close(auditLogChan)
 
-		err := jp.Read(groupCtx)
+	auditLogEvents := namedpipe.NamedPipeIngester{
+		FilePath: "/var/log/audit/audit-pipe",
+	}
+
+	alp := auditlog.AuditLogProcessor{
+		AuditLogChan: auditLogChan,
+	}
+
+	eg.Go(func() error {
+		err := auditLogEvents.Ingest(ctx, alp.Process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
-			logger.Debugf("journald worker exited (%v)", err)
+			logger.Debugf("audit log ingester exited (%v)", err)
 		}
 		return err
 	})
 
-	h.AddReadiness()
-	eg.Go(func() error {
-		ap := auditd.Auditd{
-			After:  time.UnixMicro(int64(lastReadJournalTS)),
-			Audits: logDirReader.Lines(),
-			Logins: logins,
-			EventW: eventWriter,
-			Health: h,
-		}
+	sshdEvents := namedpipe.NamedPipeIngester{
+		FilePath: "/var/log/audit/journal-pipe",
+	}
 
-		err := ap.Read(groupCtx)
+	sshdProcessor := sshd.NewSshdProcessor(ctx, logins, nodeName, mid, eventWriter)
+
+	eg.Go(func() error {
+		err := sshdEvents.Ingest(ctx, sshdProcessor.Process, logger)
+		if logger.Level().Enabled(zap.DebugLevel) {
+			logger.Debugf("syslog ingester exited (%v)", err)
+		}
+		return err
+	})
+
+	ap := auditd.Auditd{
+		Audits: auditLogChan,
+		Logins: logins,
+		EventW: eventWriter,
+	}
+
+	eg.Go(func() error {
+		err := ap.Process(groupCtx)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("audit worker exited (%v)", err)
 		}
@@ -172,8 +174,11 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		// own context, which is canceled if one of the Go
 		// routines returns a non-nil error. Thus, treating
 		// context.Canceled as a graceful shutdown may hide
+
 		// an error returned by one of the Go routines.
-		return fmt.Errorf("workers finished with error: %w", err)
+		err := fmt.Errorf("workers finished with error: %w", err)
+		logger.Errorf(err.Error())
+		return err
 	}
 
 	logger.Infoln("all workers finished without error")

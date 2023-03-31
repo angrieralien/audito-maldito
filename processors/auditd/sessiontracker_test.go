@@ -2,7 +2,9 @@ package auditd
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"math/big"
 	"strconv"
 	"testing"
 	"time"
@@ -15,6 +17,44 @@ import (
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 )
 
+// intn returns a random number between min and max.
+//
+//nolint:unparam // because min is always zero when this code was added.
+func intn(t *testing.T, min, max int64) int64 {
+	t.Helper()
+
+retry:
+	bigI, err := rand.Int(rand.Reader, big.NewInt(max))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	i := bigI.Int64()
+
+	if i < min {
+		goto retry
+	}
+
+	return i
+}
+
+func randomBytes(t *testing.T, min, max int64) []byte {
+	t.Helper()
+
+	numBytes := intn(t, min, max)
+
+	if numBytes == 0 {
+		return nil
+	}
+
+	b := make([]byte, numBytes)
+	_, err := rand.Read(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return b
+}
 func TestNewSessionTracker(t *testing.T) {
 	t.Parallel()
 
@@ -185,7 +225,7 @@ func TestSessionTracker_RemoteLogin_DoesNotHaveAuditSessionCache(t *testing.T) {
 	assert.Equal(t, expRUL, st.pidsToRULs[expRUL.PID])
 }
 
-//nolint // Maybe the linter should read the documentation
+// nolint // Maybe the linter should read the documentation
 func TestSessionTracker_AuditdEvent_NoSessionID(t *testing.T) {
 	t.Parallel()
 

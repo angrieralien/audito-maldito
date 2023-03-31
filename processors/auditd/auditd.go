@@ -31,13 +31,6 @@ func SetLogger(l *zap.SugaredLogger) {
 // Auditd enables correlation of remote user logins (and the credential they
 // used to log in with, such as a SSH certificate) and Linux audit events.
 type Auditd struct {
-	// After filters audit events prior to a particular point in time.
-	// For example, using time.Now means all events that occurred
-	// before time.Now will be ignored.
-	//
-	// A zero time.Time means no events are ignored.
-	After time.Time
-
 	// Audits receives audit log lines from one or more audit files.
 	Audits <-chan string
 
@@ -47,19 +40,16 @@ type Auditd struct {
 
 	// EventW is the auditevent.EventWriter to write events to.
 	EventW *auditevent.EventWriter
-
-	Health *common.Health
 }
 
 // TODO: Write documentation about creating a splunk query that shows
 // only events after a user-start.
-func (o *Auditd) Read(ctx context.Context) error {
+func (o *Auditd) Process(ctx context.Context) error {
 	reassembleAuditdEvents := make(chan reassembleAuditdEventResult)
 
 	reassembler, err := libaudit.NewReassembler(maxEventsInFlight, eventTimeout, &reassemblerCB{
 		ctx:     ctx,
 		results: reassembleAuditdEvents,
-		after:   o.After,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create new auditd message resassembler - %w", err)
@@ -82,8 +72,6 @@ func (o *Auditd) Read(ctx context.Context) error {
 
 	staleDataTicker := time.NewTicker(staleDataCleanupInterval)
 	defer staleDataTicker.Stop()
-
-	o.Health.OnReady()
 
 	for {
 		select {
@@ -175,7 +163,6 @@ var _ libaudit.Stream = &reassemblerCB{}
 type reassemblerCB struct {
 	ctx     context.Context //nolint
 	results chan<- reassembleAuditdEventResult
-	after   time.Time
 }
 
 func (s *reassemblerCB) ReassemblyComplete(msgs []*auparse.AuditMessage) {
@@ -191,10 +178,6 @@ func (s *reassemblerCB) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 		}:
 		}
 
-		return
-	}
-
-	if event.Timestamp.Before(s.after) {
 		return
 	}
 

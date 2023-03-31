@@ -1,4 +1,4 @@
-package auditd
+package dirreader
 
 import (
 	"bufio"
@@ -235,6 +235,7 @@ type rotatingFile struct {
 	lines  chan<- string
 	boConf backoff.BackOff
 	boFn   func(backoff.Operation, backoff.BackOff) error
+	logger *zap.SugaredLogger
 }
 
 func (o *rotatingFile) setOffset(i int64) {
@@ -254,8 +255,8 @@ func (o *rotatingFile) readWithRetry(ctx context.Context, op fsnotify.Op) error 
 	return o.boFn(func() error {
 		err := o.read(ctx, op)
 		if err != nil {
-			if logger.Level().Enabled(zap.DebugLevel) {
-				logger.Debug("read-error", err)
+			if o.logger.Level().Enabled(zap.DebugLevel) {
+				o.logger.Debug("read-error", err)
 			}
 
 			if errors.Is(err, context.Canceled) {
