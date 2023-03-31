@@ -1,3 +1,0 @@
--D
--a always,exit -S execve -F path=/usr/bin/ls -F perm=x -F key=rsyslog-test
-
