@@ -1,3 +1,7 @@
+// auditlog package processes the /var/log/audit/audit.log log file.
+// Process records the stream of text and on newline sends the line of text
+// to the AuditLogChan for received by the auditd processor for
+// correlation and analysis.
 package auditlog
 
 import (

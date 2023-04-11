@@ -118,13 +118,13 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		return err
 	})
 
-	sshdEvents := namedpipe.NamedPipeIngester{
-		FilePath: "/var/log/audit/journal-pipe",
-	}
-
-	sshdProcessor := sshd.NewSshdProcessor(ctx, logins, nodeName, mid, eventWriter)
-
 	eg.Go(func() error {
+		sshdEvents := namedpipe.NamedPipeIngester{
+			FilePath: "/var/log/audit/journal-pipe",
+		}
+
+		sshdProcessor := sshd.NewSshdProcessor(ctx, logins, nodeName, mid, eventWriter)
+
 		err := sshdEvents.Ingest(ctx, sshdProcessor.Process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("syslog ingester exited (%v)", err)
