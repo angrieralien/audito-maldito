@@ -20,8 +20,6 @@ import (
 	"github.com/metal-toolbox/audito-maldito/processors/auditlog"
 
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
-
-	"github.com/metal-toolbox/audito-maldito/internal/util"
 )
 
 const usage = `audito-maldito
@@ -80,13 +78,6 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	auditd.SetLogger(logger)
 
-	_, err = util.Distro() // dont need distro
-	if err != nil {
-		err := fmt.Errorf("failed to get os distro type: %w", err)
-		logger.Errorf(err.Error())
-		return err
-	}
-
 	mid, miderr := common.GetMachineID()
 	if miderr != nil {
 		err := fmt.Errorf("failed to get machine id: %w", miderr)
@@ -97,12 +88,6 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	nodeName, nodenameerr := common.GetNodeName()
 	if nodenameerr != nil {
 		err := fmt.Errorf("failed to get node name: %w", nodenameerr)
-		logger.Errorf(err.Error())
-		return err
-	}
-
-	if err := common.EnsureFlushDirectory(); err != nil {
-		err := fmt.Errorf("failed to ensure flush directory: %w", err)
 		logger.Errorf(err.Error())
 		return err
 	}
@@ -161,6 +146,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		Health: h,
 	}
 
+	h.AddReadiness()
 	eg.Go(func() error {
 		err := ap.Process(groupCtx)
 		if logger.Level().Enabled(zap.DebugLevel) {
