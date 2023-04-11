@@ -102,14 +102,15 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	auditLogChan := make(chan string)
 
-	alp := auditlog.AuditLogProcessor{
-		AuditLogChan: auditLogChan,
-	}
-
 	eg.Go(func() error {
 		auditLogEvents := namedpipe.NamedPipeIngester{
 			FilePath: "/var/log/audit/audit-pipe",
 		}
+
+		alp := auditlog.AuditLogProcessor{
+			AuditLogChan: auditLogChan,
+		}
+
 		err := auditLogEvents.Ingest(ctx, alp.Process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("audit log ingester exited (%v)", err)
