@@ -80,6 +80,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	logger = l.Sugar()
 
 	auditd.SetLogger(logger)
+	sshd.SetLogger(logger)
 
 	distro, err := util.Distro()
 	if err != nil {
