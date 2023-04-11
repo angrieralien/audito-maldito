@@ -158,6 +158,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		Audits: auditLogChan,
 		Logins: logins,
 		EventW: eventWriter,
+		Health: h,
 	}
 
 	eg.Go(func() error {
