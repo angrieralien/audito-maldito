@@ -132,15 +132,15 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		return err
 	})
 
-	ap := auditd.Auditd{
-		Audits: auditLogChan,
-		Logins: logins,
-		EventW: eventWriter,
-		Health: h,
-	}
-
 	h.AddReadiness()
 	eg.Go(func() error {
+		ap := auditd.Auditd{
+			Audits: auditLogChan,
+			Logins: logins,
+			EventW: eventWriter,
+			Health: h,
+		}
+
 		err := ap.Process(groupCtx)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("audit worker exited (%v)", err)
