@@ -36,7 +36,7 @@ OPTIONS
 
 var logger *zap.SugaredLogger
 
-func Run(ctx context.Context, osArgs []string, optLoggerConfig *zap.Config) error {
+func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig *zap.Config) error {
 	var bootID string
 	var auditlogpath string
 	var auditLogDirPath string

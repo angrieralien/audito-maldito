@@ -53,7 +53,7 @@ type Auditd struct {
 
 // TODO: Write documentation about creating a splunk query that shows
 // only events after a user-start.
-func (o *Auditd) Read(ctx context.Context) error {
+func (o *Auditd) Process(ctx context.Context) error {
 	reassemblerErrors := make(chan error, 1)
 	tracker := sessiontracker.NewSessionTracker(o.EventW, logger)
 

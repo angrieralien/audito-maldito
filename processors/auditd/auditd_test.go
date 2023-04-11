@@ -43,7 +43,7 @@ func TestAuditd_Read_RemoteLoginError(t *testing.T) {
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	select {
@@ -87,7 +87,7 @@ func TestAuditd_Read_ParseAuditLogError(t *testing.T) {
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	err := <-errs
@@ -134,7 +134,7 @@ func TestAuditd_Read_AuditEventError(t *testing.T) {
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	allowWritesFn()

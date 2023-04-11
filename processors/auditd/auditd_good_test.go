@@ -87,7 +87,7 @@ func TestAuditd_Read_GoodRemoteUserLoginFirst(t *testing.T) {
 
 	exited := make(chan error, 1)
 	go func() {
-		exited <- a.Read(ctx)
+		exited <- a.Process(ctx)
 	}()
 
 	sshLogin := newSshdJournaldAuditEvent("user", goodAuditdSshdPid)
@@ -150,7 +150,7 @@ func TestAuditd_Read_GoodAuditdEventsFirst(t *testing.T) {
 
 	exited := make(chan error, 1)
 	go func() {
-		exited <- a.Read(ctx)
+		exited <- a.Process(ctx)
 	}()
 
 	allowWritesFn()
