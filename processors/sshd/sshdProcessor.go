@@ -1,11 +1,9 @@
 package sshd
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -69,40 +67,12 @@ func SetLogger(l *zap.SugaredLogger) {
 	logger = l
 }
 
-type syslogMessage struct {
+type SyslogMessage struct {
 	PID     string
 	Message string
 }
 
-func (s *SshdProcessor) Process(ctx context.Context, r io.Reader, currentLog *bytes.Buffer, buf []byte) (int, error) {
-	n, err := r.Read(buf[:cap(buf)])
-	sp := strings.Split(string(buf[:n]), "\n")
-
-	if len(sp) > 1 {
-		sm := s.ParseSyslogMessage(currentLog.String() + sp[0])
-		s.ProcessEntry(ctx, sm)
-		for _, line := range sp[1 : len(sp)-1] {
-			sm := s.ParseSyslogMessage(line)
-			s.ProcessEntry(ctx, sm)
-		}
-		currentLog.Truncate(0)
-		currentLog.WriteString(sp[len(sp)-1])
-
-	} else {
-		currentLog.Write(buf[:n])
-	}
-	return n, err
-}
-
-func (s *SshdProcessor) ParseSyslogMessage(entry string) syslogMessage {
-	entrySplit := strings.Split(entry, " ")
-	pid := entrySplit[0]
-	logMsg := strings.Join(entrySplit[1:], " ")
-	logMsg = strings.TrimLeft(logMsg, " ")
-	return syslogMessage{PID: pid, Message: logMsg}
-}
-
-func (s *SshdProcessor) ProcessEntry(ctx context.Context, sm syslogMessage) error {
+func (s *SshdProcessor) ProcessEntry(ctx context.Context, sm SyslogMessage) error {
 	return processEntry(&SshdProcessor{
 		ctx:       ctx,
 		logins:    s.logins,

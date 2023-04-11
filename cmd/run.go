@@ -18,6 +18,7 @@ import (
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/processors/auditd"
 	"github.com/metal-toolbox/audito-maldito/processors/auditlog"
+	"github.com/metal-toolbox/audito-maldito/processors/journald"
 
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
@@ -124,8 +125,9 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		}
 
 		sshdProcessor := sshd.NewSshdProcessor(ctx, logins, nodeName, mid, eventWriter)
+		jdp := journald.JournaldProcessor{SshdProcessor: *sshdProcessor}
 
-		err := sshdEvents.Ingest(ctx, sshdProcessor.Process, logger)
+		err := sshdEvents.Ingest(ctx, jdp.Process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("syslog ingester exited (%v)", err)
 		}

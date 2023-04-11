@@ -1,7 +1,6 @@
 package rocky_test
 
 import (
-	"context"
 	_ "embed"
 	"strings"
 	"testing"
@@ -20,21 +19,17 @@ var testSshdPid = "3894"
 func TestRockyProcess(t *testing.T) {
 	t.Parallel()
 	r := rocky.RockyProcessor{}
-	ctx := context.Background()
 	for _, line := range strings.Split(secureLogs, "\n") {
-		logEntry, err := r.Process(ctx, line)
-		if err != nil {
-			if err.Error() != "not sshd entry" {
-				assert.Failf(t, "failed to process line: %s", line)
-			}
+		logEntry := r.ParseRockySecureMessage(line)
+		if logEntry.PID == "" {
 			continue
 		}
 
-		if logEntry == "" {
+		if logEntry.Message == "" {
 			continue
 		}
 
-		assert.Equal(t, strings.Split(logEntry, " ")[0], testSshdPid)
-		assert.Contains(t, line, strings.Split(logEntry, " ")[1])
+		assert.Equal(t, logEntry.PID, testSshdPid)
+		assert.Contains(t, line, logEntry.Message)
 	}
 }

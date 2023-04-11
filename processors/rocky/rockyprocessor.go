@@ -1,12 +1,38 @@
 package rocky
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"io"
 	"regexp"
+	"strings"
+
+	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
-type RockyProcessor struct{}
+type RockyProcessor struct {
+	SshdProcessor sshd.SshdProcessor
+}
+
+func (j *RockyProcessor) Process(ctx context.Context, r io.Reader, currentLog *bytes.Buffer, buf []byte) (int, error) {
+	n, err := r.Read(buf[:cap(buf)])
+	sp := strings.Split(string(buf[:n]), "\n")
+
+	if len(sp) > 1 {
+		sm := j.ParseRockySecureMessage(currentLog.String() + sp[0])
+		j.SshdProcessor.ProcessEntry(ctx, sm)
+		for _, line := range sp[1 : len(sp)-1] {
+			sm := j.ParseRockySecureMessage(line)
+			j.SshdProcessor.ProcessEntry(ctx, sm)
+		}
+		currentLog.Truncate(0)
+		currentLog.WriteString(sp[len(sp)-1])
+
+	} else {
+		currentLog.Write(buf[:n])
+	}
+	return n, err
+}
 
 // pidRE regex matches a sshd log line extracting the procid and message into a match group
 // example log line:
@@ -23,15 +49,15 @@ var pidRE = regexp.MustCompile(`sshd\[(?P<PROCID>\w+)\]: (?P<MSG>.+)`)
 // numberOfMatches should have 3 match groups.
 var numberOfMatches = 3
 
-func (r *RockyProcessor) Process(ctx context.Context, line string) (string, error) {
-	entryMatches := pidRE.FindStringSubmatch(line)
-	if entryMatches == nil {
-		return "", nil
+func (r *RockyProcessor) ParseRockySecureMessage(line string) sshd.SyslogMessage {
+	messageMatches := pidRE.FindStringSubmatch(line)
+	if messageMatches == nil {
+		return sshd.SyslogMessage{}
 	}
 
-	if len(entryMatches) < numberOfMatches {
-		return "", fmt.Errorf("match group less than 3")
+	if len(messageMatches) < numberOfMatches {
+		return sshd.SyslogMessage{}
 	}
 
-	return fmt.Sprintf("%s %s", entryMatches[1], entryMatches[2]), nil
+	return sshd.SyslogMessage{PID: messageMatches[1], Message: messageMatches[2]}
 }
