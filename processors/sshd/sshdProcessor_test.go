@@ -1,4 +1,4 @@
-package processors
+package sshd
 
 import (
 	"context"
@@ -357,6 +357,7 @@ func TestEntryProcessing(t *testing.T) {
 			w := auditevent.NewAuditEventWriter(enc)
 
 			logins := make(chan common.RemoteUserLogin, 1)
+<<<<<<< HEAD:internal/processors/processentry_test.go
 			err := ProcessEntry(&ProcessEntryConfig{
 				Ctx:       ctx,
 				Logins:    logins,
@@ -367,6 +368,17 @@ func TestEntryProcessing(t *testing.T) {
 				Pid:       tt.args.pid,
 				EventW:    w,
 				Metrics:   metrics.NewPrometheusMetricsProviderForRegisterer(pr),
+=======
+			err := ProcessEntry(&SshdProcessor{
+				ctx:       ctx,
+				logins:    logins,
+				logEntry:  tt.args.logentry,
+				nodeName:  tt.args.nodename,
+				machineID: tt.args.mid,
+				when:      expectedts,
+				pid:       tt.args.pid,
+				eventW:    w,
+>>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor_test.go
 			})
 			assert.NoError(t, err)
 

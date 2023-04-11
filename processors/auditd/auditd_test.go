@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/metal-toolbox/audito-maldito/internal/auditd/sessiontracker"
-	fakest "github.com/metal-toolbox/audito-maldito/internal/auditd/sessiontracker/fakes"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/internal/testtools"
+	"github.com/metal-toolbox/audito-maldito/processors/auditd/sessiontracker"
+	fakest "github.com/metal-toolbox/audito-maldito/processors/auditd/sessiontracker/fakes"
 )
 
 func TestAuditd_Read_RemoteLoginError(t *testing.T) {
@@ -43,7 +43,7 @@ func TestAuditd_Read_RemoteLoginError(t *testing.T) {
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	select {
@@ -87,7 +87,7 @@ func TestAuditd_Read_ParseAuditLogError(t *testing.T) {
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	err := <-errs
@@ -134,7 +134,7 @@ func TestAuditd_Read_AuditEventError(t *testing.T) {
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- a.Read(ctx)
+		errs <- a.Process(ctx)
 	}()
 
 	allowWritesFn()

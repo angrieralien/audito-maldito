@@ -14,5 +14,8 @@ jobs:
       - name: Execute tests
         run: |
           sudo apt update
-          sudo apt install -y make gcc curl libsystemd-dev
+          sudo apt install -y make docker.io
+          sudo docker run --name rsyslog hello-world
+          sudo cd rsyslog && make image && make rsyslog && cd ..
           sudo make integration-test
+          
