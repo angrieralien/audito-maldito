@@ -16,9 +16,11 @@ import (
 
 	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
+	"github.com/metal-toolbox/audito-maldito/internal/util"
 	"github.com/metal-toolbox/audito-maldito/processors/auditd"
 	"github.com/metal-toolbox/audito-maldito/processors/auditlog"
 	"github.com/metal-toolbox/audito-maldito/processors/journald"
+	"github.com/metal-toolbox/audito-maldito/processors/rocky"
 
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
@@ -79,6 +81,13 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	auditd.SetLogger(logger)
 
+	distro, err := util.Distro()
+	if err != nil {
+		err := fmt.Errorf("failed to get os distro type: %w", err)
+		logger.Errorf(err.Error())
+		return err
+	}
+
 	mid, miderr := common.GetMachineID()
 	if miderr != nil {
 		return fmt.Errorf("failed to get machine id: %w", miderr)
@@ -125,9 +134,17 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		}
 
 		sshdProcessor := sshd.NewSshdProcessor(ctx, logins, nodeName, mid, eventWriter)
-		jdp := journald.JournaldProcessor{SshdProcessor: *sshdProcessor}
+		var process namedpipe.TailProcessor
 
-		err := sshdEvents.Ingest(ctx, jdp.Process, logger)
+		if distro == util.DistroRocky {
+			rp := rocky.RockyProcessor{SshdProcessor: *sshdProcessor}
+			process = rp.Process
+		} else {
+			jdp := journald.JournaldProcessor{SshdProcessor: *sshdProcessor}
+			process = jdp.Process
+		}
+
+		err := sshdEvents.Ingest(ctx, process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("syslog ingester exited (%v)", err)
 		}
