@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metal-toolbox/audito-maldito/internal/app"
+	"github.com/metal-toolbox/audito-maldito/cmd"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 )
 
@@ -77,7 +77,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
-		appErrs <- app.Run(ctx, []string{"audito-maldito"}, appHealth, zapLoggerConfig())
+		appErrs <- cmd.Run(ctx, []string{"audito-maldito"}, appHealth, zapLoggerConfig())
 	}()
 
 	err := appHealth.WaitForReadyCtxOrTimeout(ctx, time.Minute)
