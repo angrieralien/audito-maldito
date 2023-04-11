@@ -101,7 +101,6 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	logger.Infoln("starting workers...")
 
 	auditLogChan := make(chan string)
-	defer close(auditLogChan)
 
 	auditLogEvents := namedpipe.NamedPipeIngester{
 		FilePath: "/var/log/audit/audit-pipe",
