@@ -80,25 +80,19 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	mid, miderr := common.GetMachineID()
 	if miderr != nil {
-		err := fmt.Errorf("failed to get machine id: %w", miderr)
-		logger.Errorf(err.Error())
-		return err
+		return fmt.Errorf("failed to get machine id: %w", miderr)
 	}
 
 	nodeName, nodenameerr := common.GetNodeName()
 	if nodenameerr != nil {
-		err := fmt.Errorf("failed to get node name: %w", nodenameerr)
-		logger.Errorf(err.Error())
-		return err
+		return fmt.Errorf("failed to get node name: %w", nodenameerr)
 	}
 
 	eg, groupCtx := errgroup.WithContext(ctx)
 
 	auf, auditfileerr := helpers.OpenAuditLogFileUntilSuccessWithContext(groupCtx, auditlogpath, zapr.NewLogger(l))
 	if auditfileerr != nil {
-		err := fmt.Errorf("failed to open audit log file: %w", auditfileerr)
-		logger.Errorf(err.Error())
-		return err
+		return fmt.Errorf("failed to open audit log file: %w", auditfileerr)
 	}
 
 	eventWriter := auditevent.NewDefaultAuditEventWriter(auf)
