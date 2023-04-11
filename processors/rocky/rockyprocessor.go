@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-
-	"github.com/metal-toolbox/audito-maldito/internal/processors"
 )
 
 type RockyProcessor struct{}
@@ -25,15 +23,15 @@ var pidRE = regexp.MustCompile(`sshd\[(?P<PROCID>\w+)\]: (?P<MSG>.+)`)
 // numberOfMatches should have 3 match groups.
 var numberOfMatches = 3
 
-func (r *RockyProcessor) Process(ctx context.Context, line string) (processors.ProcessEntryMessage, error) {
+func (r *RockyProcessor) Process(ctx context.Context, line string) (string, error) {
 	entryMatches := pidRE.FindStringSubmatch(line)
 	if entryMatches == nil {
-		return processors.ProcessEntryMessage{}, nil
+		return "", nil
 	}
 
 	if len(entryMatches) < numberOfMatches {
-		return processors.ProcessEntryMessage{}, fmt.Errorf("match group less than 3")
+		return "", fmt.Errorf("match group less than 3")
 	}
 
-	return processors.ProcessEntryMessage{PID: entryMatches[1], LogEntry: entryMatches[2]}, nil
+	return fmt.Sprintf("%s %s", entryMatches[1], entryMatches[2]), nil
 }
