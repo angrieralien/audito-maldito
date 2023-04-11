@@ -156,8 +156,6 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		// context.Canceled as a graceful shutdown may hide
 
 		// an error returned by one of the Go routines.
-		err := fmt.Errorf("workers finished with error: %w", err)
-		logger.Errorf(err.Error())
 		return err
 	}
 
