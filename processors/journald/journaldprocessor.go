@@ -19,10 +19,10 @@ func (j *JournaldProcessor) Process(ctx context.Context, r io.Reader, currentLog
 
 	if len(sp) > 1 {
 		sm := j.ParseSyslogMessage(currentLog.String() + sp[0])
-		j.SshdProcessor.ProcessEntry(ctx, sm)
+		j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
 		for _, line := range sp[1 : len(sp)-1] {
 			sm := j.ParseSyslogMessage(line)
-			j.SshdProcessor.ProcessEntry(ctx, sm)
+			j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
 		}
 		currentLog.Truncate(0)
 		currentLog.WriteString(sp[len(sp)-1])
@@ -33,10 +33,10 @@ func (j *JournaldProcessor) Process(ctx context.Context, r io.Reader, currentLog
 	return n, err
 }
 
-func (s *JournaldProcessor) ParseSyslogMessage(entry string) sshd.SyslogMessage {
+func (s *JournaldProcessor) ParseSyslogMessage(entry string) sshd.SshdLogEntry {
 	entrySplit := strings.Split(entry, " ")
 	pid := entrySplit[0]
 	logMsg := strings.Join(entrySplit[1:], " ")
 	logMsg = strings.TrimLeft(logMsg, " ")
-	return sshd.SyslogMessage{PID: pid, Message: logMsg}
+	return sshd.SshdLogEntry{PID: pid, Message: logMsg}
 }

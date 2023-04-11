@@ -20,10 +20,10 @@ func (j *RockyProcessor) Process(ctx context.Context, r io.Reader, currentLog *b
 
 	if len(sp) > 1 {
 		sm := j.ParseRockySecureMessage(currentLog.String() + sp[0])
-		j.SshdProcessor.ProcessEntry(ctx, sm)
+		j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
 		for _, line := range sp[1 : len(sp)-1] {
 			sm := j.ParseRockySecureMessage(line)
-			j.SshdProcessor.ProcessEntry(ctx, sm)
+			j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
 		}
 		currentLog.Truncate(0)
 		currentLog.WriteString(sp[len(sp)-1])
@@ -49,15 +49,15 @@ var pidRE = regexp.MustCompile(`sshd\[(?P<PROCID>\w+)\]: (?P<MSG>.+)`)
 // numberOfMatches should have 3 match groups.
 var numberOfMatches = 3
 
-func (r *RockyProcessor) ParseRockySecureMessage(line string) sshd.SyslogMessage {
+func (r *RockyProcessor) ParseRockySecureMessage(line string) sshd.SshdLogEntry {
 	messageMatches := pidRE.FindStringSubmatch(line)
 	if messageMatches == nil {
-		return sshd.SyslogMessage{}
+		return sshd.SshdLogEntry{}
 	}
 
 	if len(messageMatches) < numberOfMatches {
-		return sshd.SyslogMessage{}
+		return sshd.SshdLogEntry{}
 	}
 
-	return sshd.SyslogMessage{PID: messageMatches[1], Message: messageMatches[2]}
+	return sshd.SshdLogEntry{PID: messageMatches[1], Message: messageMatches[2]}
 }

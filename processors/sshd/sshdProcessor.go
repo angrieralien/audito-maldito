@@ -15,6 +15,40 @@ import (
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 )
 
+func NewSshdProcessor(ctx context.Context, logins chan<- common.RemoteUserLogin, nodeName string, machineID string, eventW *auditevent.EventWriter) *SshdProcessor {
+	return &SshdProcessor{
+		ctx:       ctx,
+		logins:    logins,
+		nodeName:  nodeName,
+		machineID: machineID,
+		eventW:    eventW,
+	}
+}
+
+type SshdProcessor struct {
+	ctx       context.Context //nolint
+	logins    chan<- common.RemoteUserLogin
+	logEntry  string
+	nodeName  string
+	machineID string
+	when      time.Time
+	pid       string
+	eventW    *auditevent.EventWriter
+}
+
+func (s *SshdProcessor) ProcessSshdLogEntry(ctx context.Context, sm SshdLogEntry) error {
+	return ProcessEntry(&SshdProcessor{
+		ctx:       ctx,
+		logins:    s.logins,
+		logEntry:  sm.Message,
+		nodeName:  s.nodeName,
+		machineID: s.machineID,
+		when:      time.Now(),
+		pid:       sm.PID,
+		eventW:    s.eventW,
+	})
+}
+
 const (
 	idxLoginUserName = "Username"
 	idxLoginSource   = "Source"
@@ -67,24 +101,6 @@ func SetLogger(l *zap.SugaredLogger) {
 	logger = l
 }
 
-type SyslogMessage struct {
-	PID     string
-	Message string
-}
-
-func (s *SshdProcessor) ProcessEntry(ctx context.Context, sm SyslogMessage) error {
-	return processEntry(&SshdProcessor{
-		ctx:       ctx,
-		logins:    s.logins,
-		logEntry:  sm.Message,
-		nodeName:  s.nodeName,
-		machineID: s.machineID,
-		when:      time.Now(),
-		pid:       sm.PID,
-		eventW:    s.eventW,
-	})
-}
-
 func extraDataWithoutCA(alg, keySum string) (*json.RawMessage, error) {
 	extraData := map[string]string{
 		idxLoginAlg:  alg,
@@ -107,28 +123,12 @@ func extraDataWithCA(alg, keySum, certSerial, caData string) (*json.RawMessage, 
 	return &rawmsg, err
 }
 
-func NewSshdProcessor(ctx context.Context, logins chan<- common.RemoteUserLogin, nodeName string, machineID string, eventW *auditevent.EventWriter) *SshdProcessor {
-	return &SshdProcessor{
-		ctx:       ctx,
-		logins:    logins,
-		nodeName:  nodeName,
-		machineID: machineID,
-		eventW:    eventW,
-	}
+type SshdLogEntry struct {
+	Message string
+	PID     string
 }
 
-type SshdProcessor struct {
-	ctx       context.Context //nolint
-	logins    chan<- common.RemoteUserLogin
-	logEntry  string
-	nodeName  string
-	machineID string
-	when      time.Time
-	pid       string
-	eventW    *auditevent.EventWriter
-}
-
-func processEntry(config *SshdProcessor) error {
+func ProcessEntry(config *SshdProcessor) error {
 	var entryFunc func(*SshdProcessor) error
 	switch {
 	case strings.HasPrefix(config.logEntry, "Accepted publickey"):
@@ -142,9 +142,10 @@ func processEntry(config *SshdProcessor) error {
 	}
 
 	if entryFunc != nil {
+		logger.Infof("log line did match predefined regex, line: %s", config.logEntry)
 		return entryFunc(config)
 	}
-
+	logger.Infof("log line did not match any predefined regex, line: %s", config.logEntry)
 	// TODO(jaosorior): Should we log the entry if it didn't match?
 	return nil
 }
@@ -211,12 +212,22 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 			// merits us panicking here.
 			return fmt.Errorf("failed to write event: %w", err)
 		}
-		return nil
+		select {
+		case <-config.ctx.Done():
+			return nil
+		case config.logins <- common.RemoteUserLogin{
+			Source:     evt,
+			PID:        pid,
+			CredUserID: common.UnknownUser,
+		}:
+			return nil
+		}
 	}
 
 	certIdentifierStringStart := len(matches[0]) + 1
 	certIdentifierString := config.logEntry[certIdentifierStringStart:]
 	idMatches := certIDRE.FindStringSubmatch(certIdentifierString)
+	// RemoteUserLogin with extra padding
 	if idMatches == nil {
 		logger.Infoln("b: got login entry with no matches for certificate identifiers")
 		addEventInfoForUnknownUser(evt, matches[algIdx], matches[keyIdx])
@@ -225,7 +236,16 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 			// merits us panicking here.
 			return fmt.Errorf("failed to write event: %w", err)
 		}
-		return nil
+		select {
+		case <-config.ctx.Done():
+			return nil
+		case config.logins <- common.RemoteUserLogin{
+			Source:     evt,
+			PID:        pid,
+			CredUserID: common.UnknownUser,
+		}:
+			return nil
+		}
 	}
 
 	userIdx := certIDRE.SubexpIndex(idxCertUserID)
@@ -262,6 +282,7 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 		}()
 	}
 
+	// RemoteUserLogin with CA entry
 	select {
 	case <-config.ctx.Done():
 		return nil
