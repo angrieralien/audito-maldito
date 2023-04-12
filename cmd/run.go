@@ -125,7 +125,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 			Logger:       logger,
 		}
 
-		err := auditLogEvents.Ingest(ctx, alp.Process, logger)
+		err := auditLogEvents.Ingest(groupCtx, alp.Process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("audit log ingester exited (%v)", err)
 		}
@@ -137,7 +137,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 			FilePath: sshdLogFilePath,
 		}
 
-		sshdProcessor := sshd.NewSshdProcessor(ctx, logins, nodeName, mid, eventWriter)
+		sshdProcessor := sshd.NewSshdProcessor(groupCtx, logins, nodeName, mid, eventWriter)
 		var process namedpipe.TailProcessor
 
 		if distro == util.DistroRocky {
@@ -148,7 +148,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 			process = jdp.Process
 		}
 
-		err := sshdEvents.Ingest(ctx, process, logger)
+		err := sshdEvents.Ingest(groupCtx, process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("syslog ingester exited (%v)", err)
 		}
