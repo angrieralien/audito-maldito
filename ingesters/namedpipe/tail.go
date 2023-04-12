@@ -5,28 +5,22 @@ import (
 	"context"
 	"os"
 
-	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
 )
 
 type TailProcessor func(context.Context, *bufio.Reader) error
 
 func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callback TailProcessor) error {
-	// Create new watcher.
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	defer watcher.Close()
-	err = watcher.Add(file.Name())
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
 	r := bufio.NewReader(file)
 	fname := file.Name()
 	logger.Infof("tailing %s", fname)
+
+	go (func() {
+		<-ctx.Done()
+		logger.Infof("before close %s", fname)
+		file.Close()
+		logger.Infof("before close %s", fname)
+	})()
 
 	for {
 		logger.Infof("before callback %s", fname)
