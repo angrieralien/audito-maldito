@@ -113,6 +113,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	logger.Infoln("starting workers...")
 
+	h.AddReadiness()
 	eg.Go(func() error {
 		sshdEvents := namedpipe.NamedPipeIngester{
 			FilePath: sshdLogFilePath,
@@ -129,7 +130,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 			process = jdp.Process
 		}
 
-		err := sshdEvents.Ingest(groupCtx, process, logger)
+		err := sshdEvents.Ingest(groupCtx, process, logger, h)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("syslog ingester exited (%v)", err)
 		}
@@ -138,6 +139,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	auditLogChan := make(chan string)
 
+	h.AddReadiness()
 	eg.Go(func() error {
 		auditLogEvents := namedpipe.NamedPipeIngester{
 			FilePath: auditdLogFilePath,
@@ -148,7 +150,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 			Logger:       logger,
 		}
 
-		err := auditLogEvents.Ingest(groupCtx, alp.Process, logger)
+		err := auditLogEvents.Ingest(groupCtx, alp.Process, logger, h)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("audit log ingester exited (%v)", err)
 		}
