@@ -12,6 +12,7 @@ rsyslog:
 	docker run -ti \
 	--name rsyslog  \
 	-v /run/systemd/journal:/run/systemd/journal \
+	-v /var/log/audito-maldito:/var/log/audito-maldito \
 	-v /var/run/log:/var/run/log \
 	-v ${PWD}/config:/config \
 	-v /var/log/audit/:/var/log/audit/ \

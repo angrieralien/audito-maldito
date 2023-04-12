@@ -113,25 +113,6 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	logger.Infoln("starting workers...")
 
-	auditLogChan := make(chan string)
-
-	eg.Go(func() error {
-		auditLogEvents := namedpipe.NamedPipeIngester{
-			FilePath: auditdLogFilePath,
-		}
-
-		alp := auditlog.AuditLogProcessor{
-			AuditLogChan: auditLogChan,
-			Logger:       logger,
-		}
-
-		err := auditLogEvents.Ingest(groupCtx, alp.Process, logger)
-		if logger.Level().Enabled(zap.DebugLevel) {
-			logger.Debugf("audit log ingester exited (%v)", err)
-		}
-		return err
-	})
-
 	eg.Go(func() error {
 		sshdEvents := namedpipe.NamedPipeIngester{
 			FilePath: sshdLogFilePath,
@@ -151,6 +132,25 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		err := sshdEvents.Ingest(groupCtx, process, logger)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("syslog ingester exited (%v)", err)
+		}
+		return err
+	})
+
+	auditLogChan := make(chan string)
+
+	eg.Go(func() error {
+		auditLogEvents := namedpipe.NamedPipeIngester{
+			FilePath: auditdLogFilePath,
+		}
+
+		alp := auditlog.AuditLogProcessor{
+			AuditLogChan: auditLogChan,
+			Logger:       logger,
+		}
+
+		err := auditLogEvents.Ingest(groupCtx, alp.Process, logger)
+		if logger.Level().Enabled(zap.DebugLevel) {
+			logger.Debugf("audit log ingester exited (%v)", err)
 		}
 		return err
 	})
