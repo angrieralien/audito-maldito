@@ -25,7 +25,7 @@ func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callbac
 		return err
 	}
 	r := bufio.NewReader(file)
-	logger.Infof("event %s tail", file.Name())
+	logger.Infof("tailing %s", file.Name())
 
 	for {
 		select {
