@@ -28,6 +28,7 @@ func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callbac
 	for {
 		select {
 		case event, ok := <-watcher.Events:
+			logger.Infof("event in tail %s", event)
 			if !ok {
 				break
 			}
