@@ -122,6 +122,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 		alp := auditlog.AuditLogProcessor{
 			AuditLogChan: auditLogChan,
+			Logger:       logger,
 		}
 
 		err := auditLogEvents.Ingest(ctx, alp.Process, logger)
@@ -143,7 +144,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 			rp := rocky.RockyProcessor{SshdProcessor: *sshdProcessor}
 			process = rp.Process
 		} else {
-			jdp := journald.JournaldProcessor{SshdProcessor: *sshdProcessor}
+			jdp := journald.JournaldProcessor{SshdProcessor: *sshdProcessor, Logger: logger}
 			process = jdp.Process
 		}
 

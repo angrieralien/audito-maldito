@@ -32,6 +32,7 @@ func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callbac
 				break
 			}
 			if event.Has(fsnotify.Write) {
+				logger.Infof("event in tail %s", event)
 				err := callback(ctx, r)
 				if err != nil {
 					logger.Errorf(err.Error())

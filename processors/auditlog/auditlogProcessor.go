@@ -8,14 +8,19 @@ import (
 	"bufio"
 	"context"
 	"log"
+
+	"go.uber.org/zap"
 )
 
 type AuditLogProcessor struct {
 	AuditLogChan chan string
+	Logger       *zap.SugaredLogger
 }
 
 func (a *AuditLogProcessor) Process(ctx context.Context, r *bufio.Reader) error {
+	a.Logger.Infof("started: Reading string in AuditLogProcessor")
 	line, err := r.ReadString('\n')
+	a.Logger.Infof("finished: Reading string in AuditLogProcessor")
 	if err != nil {
 		log.Print("error reading from audit-pipe")
 		return err
