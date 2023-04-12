@@ -32,12 +32,11 @@ func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callbac
 				break
 			}
 			if event.Has(fsnotify.Write) {
-				for {
-					err := callback(ctx, r)
-					if err != nil {
-						logger.Errorf(err.Error())
-						return err
-					}
+				err := callback(ctx, r)
+				if err != nil {
+					logger.Errorf(err.Error())
+					return err
+
 				}
 			}
 		}
