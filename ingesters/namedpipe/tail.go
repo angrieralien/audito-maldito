@@ -2,16 +2,14 @@ package namedpipe
 
 import (
 	"bufio"
-	"bytes"
 	"context"
-	"io"
 	"os"
 
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
 )
 
-type TailProcessor func(context.Context, io.Reader, *bytes.Buffer, []byte) (int, error)
+type TailProcessor func(context.Context, *bufio.Reader) error
 
 func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callback TailProcessor) error {
 	// Create new watcher.
@@ -27,8 +25,6 @@ func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callbac
 		return err
 	}
 	r := bufio.NewReader(file)
-	currentLog := bytes.NewBufferString("")
-	buf := make([]byte, 0, 4*1024)
 	for {
 		select {
 		case event, ok := <-watcher.Events:
@@ -37,18 +33,9 @@ func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callbac
 			}
 			if event.Has(fsnotify.Write) {
 				for {
-					n, err := callback(ctx, r, currentLog, buf)
+					err := callback(ctx, r)
 					if err != nil {
-						logger.Errorln(err)
-					}
-					if n == 0 {
-						if err == nil {
-							break
-						}
-						if err == io.EOF {
-							break
-						}
-						logger.Error(err.Error())
+						logger.Errorf(err.Error())
 						return err
 					}
 				}

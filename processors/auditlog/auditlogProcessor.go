@@ -5,30 +5,21 @@
 package auditlog
 
 import (
-	"bytes"
+	"bufio"
 	"context"
-	"io"
-	"strings"
+	"log"
 )
 
 type AuditLogProcessor struct {
 	AuditLogChan chan string
 }
 
-func (a *AuditLogProcessor) Process(ctx context.Context, r io.Reader, readBytes *bytes.Buffer, buf []byte) (int, error) {
-	n, err := r.Read(buf[:cap(buf)])
-	sp := strings.Split(string(buf[:n]), "\n")
-
-	if len(sp) > 1 {
-		a.AuditLogChan <- readBytes.String() + sp[0]
-		for _, line := range sp[1 : len(sp)-1] {
-			a.AuditLogChan <- line
-		}
-		readBytes.Truncate(0)
-		readBytes.WriteString(sp[len(sp)-1])
-
-	} else {
-		readBytes.Write(buf[:n])
+func (a *AuditLogProcessor) Process(ctx context.Context, r *bufio.Reader) error {
+	line, err := r.ReadString('\n')
+	if err != nil {
+		log.Print("error reading from audit-pipe")
+		return err
 	}
-	return n, err
+	a.AuditLogChan <- line
+	return nil
 }

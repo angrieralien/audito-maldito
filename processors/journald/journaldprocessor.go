@@ -1,9 +1,9 @@
 package journald
 
 import (
-	"bytes"
+	"bufio"
 	"context"
-	"io"
+	"log"
 	"strings"
 
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
@@ -13,24 +13,15 @@ type JournaldProcessor struct {
 	SshdProcessor sshd.SshdProcessor
 }
 
-func (j *JournaldProcessor) Process(ctx context.Context, r io.Reader, currentLog *bytes.Buffer, buf []byte) (int, error) {
-	n, err := r.Read(buf[:cap(buf)])
-	sp := strings.Split(string(buf[:n]), "\n")
-
-	if len(sp) > 1 {
-		sm := j.ParseSyslogMessage(currentLog.String() + sp[0])
-		j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
-		for _, line := range sp[1 : len(sp)-1] {
-			sm := j.ParseSyslogMessage(line)
-			j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
-		}
-		currentLog.Truncate(0)
-		currentLog.WriteString(sp[len(sp)-1])
-
-	} else {
-		currentLog.Write(buf[:n])
+func (j *JournaldProcessor) Process(ctx context.Context, r *bufio.Reader) error {
+	line, err := r.ReadString('\n')
+	if err != nil {
+		log.Print("error reading from audit-pipe")
+		return err
 	}
-	return n, err
+	sm := j.ParseSyslogMessage(line)
+	err = j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
+	return err
 }
 
 func (s *JournaldProcessor) ParseSyslogMessage(entry string) sshd.SshdLogEntry {

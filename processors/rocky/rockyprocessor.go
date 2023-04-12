@@ -1,11 +1,10 @@
 package rocky
 
 import (
-	"bytes"
+	"bufio"
 	"context"
-	"io"
+	"log"
 	"regexp"
-	"strings"
 
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
@@ -14,24 +13,15 @@ type RockyProcessor struct {
 	SshdProcessor sshd.SshdProcessor
 }
 
-func (j *RockyProcessor) Process(ctx context.Context, r io.Reader, currentLog *bytes.Buffer, buf []byte) (int, error) {
-	n, err := r.Read(buf[:cap(buf)])
-	sp := strings.Split(string(buf[:n]), "\n")
-
-	if len(sp) > 1 {
-		sm := j.ParseRockySecureMessage(currentLog.String() + sp[0])
-		j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
-		for _, line := range sp[1 : len(sp)-1] {
-			sm := j.ParseRockySecureMessage(line)
-			j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
-		}
-		currentLog.Truncate(0)
-		currentLog.WriteString(sp[len(sp)-1])
-
-	} else {
-		currentLog.Write(buf[:n])
+func (j *RockyProcessor) Process(ctx context.Context, r *bufio.Reader) error {
+	line, err := r.ReadString('\n')
+	if err != nil {
+		log.Print("error reading from audit-pipe")
+		return err
 	}
-	return n, err
+	sm := j.ParseRockySecureMessage(line)
+	err = j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
+	return err
 }
 
 // pidRE regex matches a sshd log line extracting the procid and message into a match group
