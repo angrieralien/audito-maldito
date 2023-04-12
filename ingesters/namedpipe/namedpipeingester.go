@@ -17,10 +17,10 @@ func (a *NamedPipeIngester) Ingest(ctx context.Context, tailProcessor TailProces
 	var err error
 	ready := make(chan struct{})
 	// os.OpenFile blocks. Put in go routine so we can gracefully exit.
-	go (func() {
+	go func() {
 		file, err = os.OpenFile(a.FilePath, os.O_RDONLY, os.ModeNamedPipe)
 		close(ready)
-	})()
+	}()
 
 	select {
 	case <-ctx.Done():
