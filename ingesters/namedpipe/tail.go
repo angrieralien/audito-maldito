@@ -29,21 +29,12 @@ func Tail(ctx context.Context, file *os.File, logger *zap.SugaredLogger, callbac
 	logger.Infof("tailing %s", fname)
 
 	for {
-		select {
-		case event, ok := <-watcher.Events:
-			logger.Infof("event in tail %s", event)
-			if !ok {
-				break
-			}
-			if event.Has(fsnotify.Write) {
-				logger.Infof("event in tail %s", event)
-				err := callback(ctx, r)
-				if err != nil {
-					logger.Errorf(err.Error())
-					return err
-
-				}
-			}
+		logger.Infof("before callback %s", fname)
+		err := callback(ctx, r)
+		logger.Infof("after callack %s", fname)
+		if err != nil {
+			logger.Errorf("tailing threw error: %s", err)
+			return err
 		}
 	}
 }

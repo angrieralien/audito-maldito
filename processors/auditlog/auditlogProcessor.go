@@ -20,6 +20,7 @@ type AuditLogProcessor struct {
 func (a *AuditLogProcessor) Process(ctx context.Context, r *bufio.Reader) error {
 	a.Logger.Infof("started: Reading string in AuditLogProcessor")
 	line, err := r.ReadString('\n')
+	a.Logger.Info("here is the line %s", line)
 	a.Logger.Infof("finished: Reading string in AuditLogProcessor")
 	if err != nil {
 		log.Print("error reading from audit-pipe")
