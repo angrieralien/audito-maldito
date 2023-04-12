@@ -71,7 +71,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
 
-	readEventsErrs := createPipeAndReadEvents(t, ctx, "/app-audit/audit.log", onEventFn)
+	readEventsErrs := createPipeAndReadEvents(t, ctx, "app-events-output.log", onEventFn)
 
 	appHealth := common.NewHealth()
 
