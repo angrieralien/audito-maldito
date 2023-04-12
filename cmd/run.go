@@ -39,16 +39,18 @@ var logger *zap.SugaredLogger
 
 func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig *zap.Config) error {
 	var bootID string
-	var auditlogpath string
-	var auditLogDirPath string
+	var appEventsOutput string
+	var auditdLogFilePath string
+	var sshdLogFilePath string
 	logLevel := zapcore.DebugLevel // TODO: Switch default back to zapcore.ErrorLevel.
 
 	flagSet := flag.NewFlagSet(osArgs[0], flag.ContinueOnError)
 
 	// This is just needed for testing purposes. If it's empty we'll use the current boot ID
 	flagSet.StringVar(&bootID, "boot-id", "", "Optional Linux boot ID to use when reading from the journal")
-	flagSet.StringVar(&auditlogpath, "audit-log-path", "/app-audit/audit.log", "Path to the audit log file")
-	flagSet.StringVar(&auditLogDirPath, "audit-dir-path", "/var/log/audit", "Path to the Linux audit log directory")
+	flagSet.StringVar(&appEventsOutput, "app-events-output", "/app-audit/app-events-output", "Path to the app events output")
+	flagSet.StringVar(&auditdLogFilePath, "auditd-log-file-path", "/var/log/audito-maldito/audit-pipe", "Path to the audit log file")
+	flagSet.StringVar(&sshdLogFilePath, "sshd-log-file-path", "/var/log/audito-maldito/sshd-pipe", "Path to the sshd log file")
 	flagSet.Var(&logLevel, "log-level", "Set the log level according to zapcore.Level")
 	flagSet.Usage = func() {
 		os.Stderr.WriteString(usage)
@@ -101,7 +103,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	eg, groupCtx := errgroup.WithContext(ctx)
 
-	auf, auditfileerr := helpers.OpenAuditLogFileUntilSuccessWithContext(groupCtx, auditlogpath, zapr.NewLogger(l))
+	auf, auditfileerr := helpers.OpenAuditLogFileUntilSuccessWithContext(groupCtx, appEventsOutput, zapr.NewLogger(l))
 	if auditfileerr != nil {
 		return fmt.Errorf("failed to open audit log file: %w", auditfileerr)
 	}
@@ -115,7 +117,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	eg.Go(func() error {
 		auditLogEvents := namedpipe.NamedPipeIngester{
-			FilePath: "/var/log/audit/audit-pipe",
+			FilePath: auditdLogFilePath,
 		}
 
 		alp := auditlog.AuditLogProcessor{
@@ -131,7 +133,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	eg.Go(func() error {
 		sshdEvents := namedpipe.NamedPipeIngester{
-			FilePath: "/var/log/audit/journal-pipe",
+			FilePath: sshdLogFilePath,
 		}
 
 		sshdProcessor := sshd.NewSshdProcessor(ctx, logins, nodeName, mid, eventWriter)
