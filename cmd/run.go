@@ -118,11 +118,11 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		sshdProcessor := sshd.NewSshdProcessor(groupCtx, logins, nodeName, mid, eventWriter)
 
 		if distro == util.DistroRocky {
-			rp := rocky.RockyProcessor{SshdProcessor: *sshdProcessor}
-			rp.Ingest(groupCtx, sshdLogFilePath, logger, h)
+			rp := rocky.RockyProcessor{FilePath: sshdLogFilePath, SshdProcessor: *sshdProcessor, Logger: logger, Health: h}
+			rp.Ingest(groupCtx)
 		} else {
-			jdp := syslog.SyslogIngester{SshdProcessor: *sshdProcessor, Logger: logger}
-			jdp.Ingest(groupCtx, sshdLogFilePath, logger, h)
+			jdp := syslog.SyslogIngester{FilePath: sshdLogFilePath, SshdProcessor: *sshdProcessor, Logger: logger, Health: h}
+			jdp.Ingest(groupCtx)
 		}
 
 		if logger.Level().Enabled(zap.DebugLevel) {
@@ -136,11 +136,13 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	h.AddReadiness()
 	eg.Go(func() error {
 		alp := auditlog.AuditLogIngester{
+			FilePath:     auditdLogFilePath,
 			AuditLogChan: auditLogChan,
 			Logger:       logger,
+			Health:       h,
 		}
 
-		err := alp.Ingest(groupCtx, auditdLogFilePath, logger, h)
+		err := alp.Ingest(groupCtx)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("audit log ingester exited (%v)", err)
 		}

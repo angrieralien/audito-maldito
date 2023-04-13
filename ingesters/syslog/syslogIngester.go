@@ -1,34 +1,31 @@
 package syslog
 
 import (
-	"bufio"
 	"context"
-	"log"
 	"strings"
 
 	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
+	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 
 	"go.uber.org/zap"
 )
 
 type SyslogIngester struct {
-	namedpipe.NamedPipeIngester
-	SshdProcessor sshd.SshdProcessor
-	Logger        *zap.SugaredLogger
+	namedPipeIngester namedpipe.NamedPipeIngester
+	FilePath          string
+	SshdProcessor     sshd.SshdProcessor
+	Logger            *zap.SugaredLogger
+	Health            *common.Health
 }
 
-func (s *SyslogIngester) Process(ctx context.Context, r *bufio.Reader) error {
-	s.Logger.Infof("started: Reading string in JouraldProcessor")
-	line, err := r.ReadString('\n')
-	s.Logger.Infof("finished: Reading string in JouraldProcessor")
-	if err != nil {
-		log.Print("error reading from audit-pipe")
-		return err
-	}
+func (s *SyslogIngester) Ingest(ctx context.Context) error {
+	return s.namedPipeIngester.Ingest(ctx, s.FilePath, '\n', s.Process, s.Logger, s.Health)
+}
+
+func (s *SyslogIngester) Process(ctx context.Context, line string) error {
 	sm := s.ParseSyslogMessage(line)
-	err = s.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
-	return err
+	return s.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
 }
 
 func (s *SyslogIngester) ParseSyslogMessage(entry string) sshd.SshdLogEntry {

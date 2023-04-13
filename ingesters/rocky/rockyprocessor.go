@@ -1,29 +1,30 @@
 package rocky
 
 import (
-	"bufio"
 	"context"
-	"log"
 	"regexp"
 
 	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
+	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
+	"go.uber.org/zap"
 )
 
 type RockyProcessor struct {
-	namedpipe.NamedPipeIngester
-	SshdProcessor sshd.SshdProcessor
+	namedPipeIngester namedpipe.NamedPipeIngester
+	FilePath          string
+	SshdProcessor     sshd.SshdProcessor
+	Logger            *zap.SugaredLogger
+	Health            *common.Health
 }
 
-func (j *RockyProcessor) Process(ctx context.Context, r *bufio.Reader) error {
-	line, err := r.ReadString('\n')
-	if err != nil {
-		log.Print("error reading from audit-pipe")
-		return err
-	}
+func (a *RockyProcessor) Ingest(ctx context.Context) error {
+	return a.namedPipeIngester.Ingest(ctx, a.FilePath, '\n', a.Process, a.Logger, a.Health)
+}
+
+func (j *RockyProcessor) Process(ctx context.Context, line string) error {
 	sm := j.ParseRockySecureMessage(line)
-	err = j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
-	return err
+	return j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
 }
 
 // pidRE regex matches a sshd log line extracting the procid and message into a match group

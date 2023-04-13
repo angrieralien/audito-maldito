@@ -12,7 +12,9 @@ import (
 type NamedPipeIngester struct {
 }
 
-func (n *NamedPipeIngester) Ingest(ctx context.Context, filePath string, logger *zap.SugaredLogger, h *common.Health) error {
+type Callback func(context.Context, string) error
+
+func (n *NamedPipeIngester) Ingest(ctx context.Context, filePath string, delim byte, callback Callback, logger *zap.SugaredLogger, h *common.Health) error {
 	var file *os.File
 	var err error
 	ready := make(chan struct{})
@@ -29,28 +31,28 @@ func (n *NamedPipeIngester) Ingest(ctx context.Context, filePath string, logger 
 	case <-ready:
 	}
 
+	logger.Infof("Successfully opened %s", filePath)
+
 	if err != nil {
 		return err
 	}
 
 	h.OnReady()
 	r := bufio.NewReader(file)
-	fname := file.Name()
-	logger.Infof("tailing %s", fname)
-
 	go (func() {
 		<-ctx.Done()
 		file.Close()
 	})()
 
 	for {
-		err := n.Process(ctx, r)
+		line, err := r.ReadString(delim)
+		if err != nil {
+			logger.Errorf("error reading from ", file.Name())
+			return err
+		}
+		err = callback(ctx, line)
 		if err != nil {
 			return err
 		}
 	}
-}
-
-func (n *NamedPipeIngester) Process(ctx context.Context, r *bufio.Reader) error {
-	return nil
 }
