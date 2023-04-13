@@ -141,7 +141,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 		return err
 	})
 
-	auditLogChan := make(chan string, 100000)
+	auditLogChan := make(chan string, 10000)
 
 	h.AddReadiness()
 	eg.Go(func() error {
