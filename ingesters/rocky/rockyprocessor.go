@@ -6,10 +6,12 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
 type RockyProcessor struct {
+	namedpipe.NamedPipeIngester
 	SshdProcessor sshd.SshdProcessor
 }
 

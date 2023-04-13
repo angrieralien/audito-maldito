@@ -1,6 +1,7 @@
 package namedpipe
 
 import (
+	"bufio"
 	"context"
 	"os"
 
@@ -9,17 +10,16 @@ import (
 )
 
 type NamedPipeIngester struct {
-	FilePath string
 }
 
-func (a *NamedPipeIngester) Ingest(ctx context.Context, tailProcessor TailProcessor, logger *zap.SugaredLogger, h *common.Health) error {
+func (n *NamedPipeIngester) Ingest(ctx context.Context, filePath string, logger *zap.SugaredLogger, h *common.Health) error {
 	var file *os.File
 	var err error
 	ready := make(chan struct{})
 
 	// os.OpenFile blocks. Put in go routine so we can gracefully exit.
 	go func() {
-		file, err = os.OpenFile(a.FilePath, os.O_RDONLY, os.ModeNamedPipe)
+		file, err = os.OpenFile(filePath, os.O_RDONLY, os.ModeNamedPipe)
 		close(ready)
 	}()
 
@@ -34,5 +34,23 @@ func (a *NamedPipeIngester) Ingest(ctx context.Context, tailProcessor TailProces
 	}
 
 	h.OnReady()
-	return Tail(ctx, file, logger, tailProcessor)
+	r := bufio.NewReader(file)
+	fname := file.Name()
+	logger.Infof("tailing %s", fname)
+
+	go (func() {
+		<-ctx.Done()
+		file.Close()
+	})()
+
+	for {
+		err := n.Process(ctx, r)
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func (n *NamedPipeIngester) Process(ctx context.Context, r *bufio.Reader) error {
+	return nil
 }

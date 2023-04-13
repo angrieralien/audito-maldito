@@ -14,13 +14,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
+	"github.com/metal-toolbox/audito-maldito/ingesters/auditlog"
+	"github.com/metal-toolbox/audito-maldito/ingesters/rocky"
+	"github.com/metal-toolbox/audito-maldito/ingesters/syslog"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/internal/util"
 	"github.com/metal-toolbox/audito-maldito/processors/auditd"
-	"github.com/metal-toolbox/audito-maldito/processors/auditlog"
-	"github.com/metal-toolbox/audito-maldito/processors/journald"
-	"github.com/metal-toolbox/audito-maldito/processors/rocky"
 
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
@@ -115,22 +114,17 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	h.AddReadiness()
 	eg.Go(func() error {
-		sshdEvents := namedpipe.NamedPipeIngester{
-			FilePath: sshdLogFilePath,
-		}
 
 		sshdProcessor := sshd.NewSshdProcessor(groupCtx, logins, nodeName, mid, eventWriter)
-		var process namedpipe.TailProcessor
 
 		if distro == util.DistroRocky {
 			rp := rocky.RockyProcessor{SshdProcessor: *sshdProcessor}
-			process = rp.Process
+			rp.Ingest(groupCtx, sshdLogFilePath, logger, h)
 		} else {
-			jdp := journald.JournaldProcessor{SshdProcessor: *sshdProcessor, Logger: logger}
-			process = jdp.Process
+			jdp := syslog.SyslogIngester{SshdProcessor: *sshdProcessor, Logger: logger}
+			jdp.Ingest(groupCtx, sshdLogFilePath, logger, h)
 		}
 
-		err := sshdEvents.Ingest(groupCtx, process, logger, h)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("syslog ingester exited (%v)", err)
 		}
@@ -141,16 +135,12 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	h.AddReadiness()
 	eg.Go(func() error {
-		auditLogEvents := namedpipe.NamedPipeIngester{
-			FilePath: auditdLogFilePath,
-		}
-
-		alp := auditlog.AuditLogProcessor{
+		alp := auditlog.AuditLogIngester{
 			AuditLogChan: auditLogChan,
 			Logger:       logger,
 		}
 
-		err := auditLogEvents.Ingest(groupCtx, alp.Process, logger, h)
+		err := alp.Ingest(groupCtx, auditdLogFilePath, logger, h)
 		if logger.Level().Enabled(zap.DebugLevel) {
 			logger.Debugf("audit log ingester exited (%v)", err)
 		}

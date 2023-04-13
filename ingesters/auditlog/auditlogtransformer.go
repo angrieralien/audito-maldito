@@ -9,15 +9,17 @@ import (
 	"context"
 	"log"
 
+	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
 	"go.uber.org/zap"
 )
 
-type AuditLogProcessor struct {
+type AuditLogIngester struct {
+	namedpipe.NamedPipeIngester
 	AuditLogChan chan string
 	Logger       *zap.SugaredLogger
 }
 
-func (a *AuditLogProcessor) Process(ctx context.Context, r *bufio.Reader) error {
+func (a *AuditLogIngester) Process(ctx context.Context, r *bufio.Reader) error {
 	a.Logger.Infof("started: Reading string in AuditLogProcessor")
 	line, err := r.ReadString('\n')
 	a.Logger.Info("here is the line %s", line)
