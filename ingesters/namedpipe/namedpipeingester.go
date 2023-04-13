@@ -9,8 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type NamedPipeIngester struct {
-}
+type NamedPipeIngester struct{}
 
 type Callback func(context.Context, string) error
 
@@ -20,7 +19,8 @@ func (n *NamedPipeIngester) Ingest(
 	delim byte,
 	callback Callback,
 	logger *zap.SugaredLogger,
-	h *common.Health) error {
+	h *common.Health,
+) error {
 	var file *os.File
 	var err error
 	ready := make(chan struct{})
