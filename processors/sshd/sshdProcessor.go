@@ -15,7 +15,13 @@ import (
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 )
 
-func NewSshdProcessor(ctx context.Context, logins chan<- common.RemoteUserLogin, nodeName string, machineID string, eventW *auditevent.EventWriter) *SshdProcessor {
+func NewSshdProcessor(
+	ctx context.Context,
+	logins chan<- common.RemoteUserLogin,
+	nodeName string,
+	machineID string,
+	eventW *auditevent.EventWriter,
+) *SshdProcessor {
 	return &SshdProcessor{
 		ctx:       ctx,
 		logins:    logins,

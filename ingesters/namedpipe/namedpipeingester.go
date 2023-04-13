@@ -5,8 +5,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"go.uber.org/zap"
+
+	"github.com/metal-toolbox/audito-maldito/internal/common"
 )
 
 type NamedPipeIngester struct{}

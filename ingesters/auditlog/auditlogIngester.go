@@ -7,9 +7,10 @@ package auditlog
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
-	"go.uber.org/zap"
 )
 
 type AuditLogIngester struct {

@@ -19,7 +19,6 @@ import (
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/internal/util"
 	"github.com/metal-toolbox/audito-maldito/processors/auditd"
-
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
