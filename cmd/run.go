@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/metal-toolbox/audito-maldito/ingesters/auditlog"
 	"github.com/metal-toolbox/audito-maldito/ingesters/rocky"
 	"github.com/metal-toolbox/audito-maldito/ingesters/syslog"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
@@ -142,21 +143,21 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	auditLogChan := make(chan string)
 
-	// h.AddReadiness()
-	// eg.Go(func() error {
-	// 	alp := auditlog.AuditLogIngester{
-	// 		FilePath:     auditdLogFilePath,
-	// 		AuditLogChan: auditLogChan,
-	// 		Logger:       logger,
-	// 		Health:       h,
-	// 	}
+	h.AddReadiness()
+	eg.Go(func() error {
+		alp := auditlog.AuditLogIngester{
+			FilePath:     auditdLogFilePath,
+			AuditLogChan: auditLogChan,
+			Logger:       logger,
+			Health:       h,
+		}
 
-	// 	err := alp.Ingest(groupCtx)
-	// 	if logger.Level().Enabled(zap.DebugLevel) {
-	// 		logger.Debugf("audit log ingester exited (%v)", err)
-	// 	}
-	// 	return err
-	// })
+		err := alp.Ingest(groupCtx)
+		if logger.Level().Enabled(zap.DebugLevel) {
+			logger.Debugf("audit log ingester exited (%v)", err)
+		}
+		return err
+	})
 
 	h.AddReadiness()
 	eg.Go(func() error {
