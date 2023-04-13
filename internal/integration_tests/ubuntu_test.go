@@ -71,13 +71,14 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
 
-	readEventsErrs := createPipeAndReadEvents(t, ctx, "app-events-output.log", onEventFn)
+	appEventsOutputFilePath := "/app-audit/app-events-output.log"
+	readEventsErrs := createPipeAndReadEvents(t, ctx, appEventsOutputFilePath, onEventFn)
 
 	appHealth := common.NewHealth()
 
 	appErrs := make(chan error, 1)
 	go func() {
-		appErrs <- cmd.Run(ctx, []string{"audito-maldito"}, appHealth, zapLoggerConfig())
+		appErrs <- cmd.Run(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
 	}()
 
 	err := appHealth.WaitForReadyCtxOrTimeout(ctx, time.Minute)
