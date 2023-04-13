@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/go-logr/zapr"
 	"github.com/metal-toolbox/auditevent"
@@ -47,10 +46,23 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	// This is just needed for testing purposes. If it's empty we'll use the current boot ID
 	flagSet.StringVar(&bootID, "boot-id", "", "Optional Linux boot ID to use when reading from the journal")
-	flagSet.StringVar(&appEventsOutput, "app-events-output", "/app-audit/app-events-output.log", "Path to the app events output")
-	flagSet.StringVar(&auditdLogFilePath, "auditd-log-file-path", "/var/log/audito-maldito/audit-pipe", "Path to the audit log file")
-	flagSet.StringVar(&sshdLogFilePath, "sshd-log-file-path", "/var/log/audito-maldito/sshd-pipe", "Path to the sshd log file")
 	flagSet.Var(&logLevel, "log-level", "Set the log level according to zapcore.Level")
+	flagSet.StringVar(
+		&appEventsOutput,
+		"app-events-output",
+		"/app-audit/app-events-output.log",
+		"Path to the app events output")
+	flagSet.StringVar(
+		&sshdLogFilePath,
+		"sshd-log-file-path",
+		"/var/log/audito-maldito/sshd-pipe",
+		"Path to the sshd log file")
+	flagSet.StringVar(
+		&auditdLogFilePath,
+		"auditd-log-file-path",
+		"/var/log/audito-maldito/audit-pipe",
+		"Path to the audit log file")
+
 	flagSet.Usage = func() {
 		os.Stderr.WriteString(usage)
 		flagSet.PrintDefaults()
@@ -114,7 +126,6 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	h.AddReadiness()
 	eg.Go(func() error {
-
 		sshdProcessor := sshd.NewSshdProcessor(groupCtx, logins, nodeName, mid, eventWriter)
 
 		if distro == util.DistroRocky {
@@ -179,26 +190,4 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	logger.Infoln("all workers finished without error")
 
 	return nil
-}
-
-// lastReadJournalTimeStamp returns the last-read journal entry's timestamp
-// or a sensible default if the timestamp cannot be loaded.
-func lastReadJournalTimeStamp() uint64 {
-	lastRead, err := common.GetLastRead()
-	switch {
-	case err != nil:
-		lastRead = uint64(time.Now().UnixMicro())
-
-		logger.Warnf("failed to read last read timestamp for journal - "+
-			"reading from current time (reason: '%s')", err.Error())
-	case lastRead == 0:
-		lastRead = uint64(time.Now().UnixMicro())
-
-		logger.Info("last read timestamp for journal is zero - " +
-			"reading from current time")
-	default:
-		logger.Infof("last read timestamp for journal is: '%d'", lastRead)
-	}
-
-	return lastRead
 }

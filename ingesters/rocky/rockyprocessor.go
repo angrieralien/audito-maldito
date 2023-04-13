@@ -18,13 +18,13 @@ type RockyProcessor struct {
 	Health            *common.Health
 }
 
-func (a *RockyProcessor) Ingest(ctx context.Context) error {
-	return a.namedPipeIngester.Ingest(ctx, a.FilePath, '\n', a.Process, a.Logger, a.Health)
+func (r *RockyProcessor) Ingest(ctx context.Context) error {
+	return r.namedPipeIngester.Ingest(ctx, r.FilePath, '\n', r.Process, r.Logger, r.Health)
 }
 
-func (j *RockyProcessor) Process(ctx context.Context, line string) error {
-	sm := j.ParseRockySecureMessage(line)
-	return j.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
+func (r *RockyProcessor) Process(ctx context.Context, line string) error {
+	sm := r.ParseRockySecureMessage(line)
+	return r.SshdProcessor.ProcessSshdLogEntry(ctx, sm)
 }
 
 // pidRE regex matches a sshd log line extracting the procid and message into a match group

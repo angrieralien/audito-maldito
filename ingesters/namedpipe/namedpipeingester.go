@@ -14,7 +14,13 @@ type NamedPipeIngester struct {
 
 type Callback func(context.Context, string) error
 
-func (n *NamedPipeIngester) Ingest(ctx context.Context, filePath string, delim byte, callback Callback, logger *zap.SugaredLogger, h *common.Health) error {
+func (n *NamedPipeIngester) Ingest(
+	ctx context.Context,
+	filePath string,
+	delim byte,
+	callback Callback,
+	logger *zap.SugaredLogger,
+	h *common.Health) error {
 	var file *os.File
 	var err error
 	ready := make(chan struct{})
