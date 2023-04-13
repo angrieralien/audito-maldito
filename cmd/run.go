@@ -130,10 +130,10 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 		if distro == util.DistroRocky {
 			rp := rocky.RockyProcessor{FilePath: sshdLogFilePath, SshdProcessor: *sshdProcessor, Logger: logger, Health: h}
-			rp.Ingest(groupCtx)
+			err = rp.Ingest(groupCtx)
 		} else {
 			jdp := syslog.SyslogIngester{FilePath: sshdLogFilePath, SshdProcessor: *sshdProcessor, Logger: logger, Health: h}
-			jdp.Ingest(groupCtx)
+			err = jdp.Ingest(groupCtx)
 		}
 
 		if logger.Level().Enabled(zap.DebugLevel) {

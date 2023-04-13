@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/metal-toolbox/audito-maldito/ingesters/namedpipe"
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
-
-	"go.uber.org/zap"
 )
 
 type SyslogIngester struct {
