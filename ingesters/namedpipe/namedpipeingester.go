@@ -57,6 +57,7 @@ func (n *NamedPipeIngester) Ingest(
 			logger.Errorf("error reading from ", file.Name())
 			return err
 		}
+		logger.Infof("Logging for %s: , Line: %s", file.Name(), line)
 		err = callback(ctx, line)
 		if err != nil {
 			return err
