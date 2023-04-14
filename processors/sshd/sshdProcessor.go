@@ -362,6 +362,8 @@ func processCertificateInvalidEntry(config *SshdProcessor) error {
 		evt = evt.WithData(ed)
 	}
 
+	// Increment metric even if it fails to write the event
+	config.metrics.IncLogins(metrics.SSHCertLogin, metrics.Failure)
 	if err := config.eventW.Write(evt); err != nil {
 		// NOTE(jaosorior): Not being able to write audit events
 		// merits us error-ing here.
@@ -384,7 +386,7 @@ func extraDataForInvalidCert(reason string) (*json.RawMessage, error) {
 func processNotInAllowUsersEntry(config *SshdProcessor) error {
 	matches := notInAllowUsersRE.FindStringSubmatch(config.logEntry)
 	if matches == nil {
-		logger.Infoln("got login entry with no matches for not-in-allow-users")
+		logger.Infoln("got login entry with no regular expression matches for not-in-allow-users")
 		return nil
 	}
 
@@ -409,6 +411,9 @@ func processNotInAllowUsersEntry(config *SshdProcessor) error {
 		"machine-id": config.machineID,
 	})
 
+	// Increment metric even if it fails to write the event
+	config.metrics.IncLogins(metrics.UnknownLogin, metrics.Failure)
+
 	evt.LoggedAt = config.when
 	if err := config.eventW.Write(evt); err != nil {
 		// NOTE(jaosorior): Not being able to write audit events
@@ -422,7 +427,7 @@ func processNotInAllowUsersEntry(config *SshdProcessor) error {
 func processInvalidUserEntry(config *SshdProcessor) error {
 	matches := invalidUserRE.FindStringSubmatch(config.logEntry)
 	if matches == nil {
-		logger.Infoln("got login entry with no matches for invalid-user")
+		logger.Infoln("got login entry with no regular expression matches for invalid-user")
 		return nil
 	}
 
@@ -450,6 +455,9 @@ func processInvalidUserEntry(config *SshdProcessor) error {
 		"host":       config.nodeName,
 		"machine-id": config.machineID,
 	})
+
+	// Increment metric even if it fails to write the event
+	config.metrics.IncLogins(metrics.UnknownLogin, metrics.Failure)
 
 	evt.LoggedAt = config.when
 	if err := config.eventW.Write(evt); err != nil {

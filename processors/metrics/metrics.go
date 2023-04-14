@@ -2,6 +2,8 @@
 package metrics
 
 import (
+	"log"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -59,5 +61,8 @@ func NewPrometheusMetricsProviderForRegisterer(r prometheus.Registerer) *Prometh
 
 // IncLogins increments the number of logins by the given type.
 func (p *PrometheusMetricsProvider) IncLogins(loginType LoginType, outcome OutcomeType) {
+	log.Printf("loging type: %s ", loginType)
+	log.Printf("outcome type: %s ", outcome)
+	log.Printf("remote logins %v", p.remoteLogins)
 	p.remoteLogins.WithLabelValues(string(loginType), string(outcome)).Inc()
 }
