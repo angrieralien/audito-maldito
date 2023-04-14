@@ -63,6 +63,11 @@ func NewPrometheusMetricsProviderForRegisterer(r prometheus.Registerer) *Prometh
 func (p *PrometheusMetricsProvider) IncLogins(loginType LoginType, outcome OutcomeType) {
 	log.Printf("loging type: %s ", loginType)
 	log.Printf("outcome type: %s ", outcome)
-	log.Printf("remote logins %v", p.remoteLogins)
+	if p.remoteLogins == nil {
+		log.Printf("remote logins is nil")
+	} else {
+		log.Printf("remote logins %v", p.remoteLogins)
+	}
+
 	p.remoteLogins.WithLabelValues(string(loginType), string(outcome)).Inc()
 }
