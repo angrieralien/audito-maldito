@@ -49,6 +49,15 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	ctx, cancelFn := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancelFn()
 
+	sadness := exec.CommandContext(ctx, "cat", "/var/log/audito-maldito/audit-pipe")
+	err := sadness.Start()
+	if err != nil {
+		t.Fatalf("failed to start sadness - %s", err)
+	}
+	defer func() {
+		_ = sadness.Process.Kill()
+	}()
+
 	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
 
 	// Required by audito-maldito.
@@ -78,6 +87,8 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
+		_ = sadness.Process.Kill()
+		_ = sadness.Wait()
 		appErrs <- cmd.Run(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
 	}()
 
