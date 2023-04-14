@@ -26,9 +26,6 @@ func (a *AuditLogIngester) Ingest(ctx context.Context) error {
 }
 
 func (a *AuditLogIngester) Process(ctx context.Context, line string) error {
-	a.Logger.Infof("AuditLogProcessor YO:  start")
-	a.Logger.Infof("AuditLogProcessor YO:  line %s", line)
 	a.AuditLogChan <- line
-	a.Logger.Infof("AuditLogProcessor YO:  finish")
 	return nil
 }
