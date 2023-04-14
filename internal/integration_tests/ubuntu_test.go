@@ -49,6 +49,21 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	ctx, cancelFn := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancelFn()
 
+	expectedShellPipeline := []appToRun{
+		{
+			exeName: "hexdump",
+			args: []string{
+				"-C", "/etc/ssh/sshd_config",
+			},
+		},
+		{
+			exeName: "grep",
+			args: []string{
+				"Permit",
+			},
+		},
+	}
+
 	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
 
 	appEventsOutputFilePath := "/app-audit/app-events-output-test.log"
@@ -67,21 +82,6 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	// Required by audito-maldito.
 	t.Setenv("NODE_NAME", "integration-test")
-
-	expectedShellPipeline := []appToRun{
-		{
-			exeName: "hexdump",
-			args: []string{
-				"-C", "/etc/ssh/sshd_config",
-			},
-		},
-		{
-			exeName: "grep",
-			args: []string{
-				"Permit",
-			},
-		},
-	}
 
 	err := appHealth.WaitForReadyCtxOrTimeout(ctx, time.Minute)
 	if err != nil {
