@@ -51,6 +51,10 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	sadness := exec.CommandContext(ctx, "cat", "/var/log/audito-maldito/audit-pipe")
 	err := sadness.Start()
+	time.Sleep(10 * time.Second)
+	_ = sadness.Process.Kill()
+	_ = sadness.Wait()
+
 	if err != nil {
 		t.Fatalf("failed to start sadness - %s", err)
 	}
@@ -87,9 +91,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
-		time.Sleep(10 * time.Second)
-		_ = sadness.Process.Kill()
-		_ = sadness.Wait()
+
 		appErrs <- cmd.Run(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
 	}()
 
