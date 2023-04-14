@@ -56,6 +56,7 @@ func (s *SshdProcessor) ProcessSshdLogEntry(ctx context.Context, sm SshdLogEntry
 		when:      time.Now(),
 		pid:       sm.PID,
 		eventW:    s.eventW,
+		metrics:   s.metrics,
 	})
 }
 
