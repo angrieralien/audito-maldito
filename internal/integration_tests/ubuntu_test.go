@@ -49,19 +49,21 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	ctx, cancelFn := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancelFn()
 
-	sadness := exec.CommandContext(ctx, "cat", "/var/log/audito-maldito/audit-pipe")
-	err := sadness.Start()
-	time.Sleep(10 * time.Second)
-	_ = sadness.Process.Kill()
-	_ = sadness.Wait()
-
 	if err != nil {
 		t.Fatalf("failed to start sadness - %s", err)
 	}
-	defer func() {
-		_ = sadness.Process.Kill()
+
+	appEventsOutputFilePath := "/app-audit/app-events-output-test.log"
+	readEventsErrs := createPipeAndReadEvents(t, ctx, appEventsOutputFilePath, onEventFn)
+
+	appHealth := common.NewHealth()
+	appErrs := make(chan error, 1)
+	go func() {
+		appErrs <- cmd.Run(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
 	}()
 
+	// let audito-maldito start
+	time.Sleep(5 * time.Second)
 	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
 
 	// Required by audito-maldito.
@@ -83,17 +85,6 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	}
 
 	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
-
-	appEventsOutputFilePath := "/app-audit/app-events-output-test.log"
-	readEventsErrs := createPipeAndReadEvents(t, ctx, appEventsOutputFilePath, onEventFn)
-
-	appHealth := common.NewHealth()
-
-	appErrs := make(chan error, 1)
-	go func() {
-
-		appErrs <- cmd.Run(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
-	}()
 
 	err = appHealth.WaitForReadyCtxOrTimeout(ctx, time.Minute)
 	if err != nil {
