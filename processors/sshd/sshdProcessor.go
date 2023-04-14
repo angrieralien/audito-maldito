@@ -13,11 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/metal-toolbox/audito-maldito/internal/common"
-<<<<<<< HEAD:internal/processors/processentry.go
-	"github.com/metal-toolbox/audito-maldito/internal/metrics"
-=======
 	"github.com/metal-toolbox/audito-maldito/processors/metrics"
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 )
 
 func NewSshdProcessor(
@@ -138,27 +134,9 @@ func extraDataWithCA(alg, keySum, certSerial, caData string) (*json.RawMessage, 
 	return &rawmsg, err
 }
 
-<<<<<<< HEAD:internal/processors/processentry.go
-type ProcessEntryMessage struct {
-	LogEntry string
-	PID      string
-}
-
-type ProcessEntryConfig struct {
-	Ctx       context.Context //nolint
-	Logins    chan<- common.RemoteUserLogin
-	LogEntry  string
-	NodeName  string
-	MachineID string
-	When      time.Time
-	Pid       string
-	EventW    *auditevent.EventWriter
-	Metrics   *metrics.PrometheusMetricsProvider
-=======
 type SshdLogEntry struct {
 	Message string
 	PID     string
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 }
 
 func ProcessEntry(config *SshdProcessor) error {
@@ -236,20 +214,12 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 	evt.LoggedAt = config.when
 
 	// SSHLogin
-<<<<<<< HEAD:internal/processors/processentry.go
-	if len(config.LogEntry) == len(matches[0]) {
-=======
 	if len(config.logEntry) == len(matches[0]) {
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 		// TODO: This log message is incorrect... but I am not sure
 		//  what this logic is trying to accomplish.
 		logger.Infoln("a: got login entry with no matches for certificate identifiers")
 		// Increment metric even if it fails to write the event
-<<<<<<< HEAD:internal/processors/processentry.go
-		config.Metrics.IncLogins(metrics.SSHKeyLogin, metrics.Success)
-=======
 		config.metrics.IncLogins(metrics.SSHKeyLogin, metrics.Success)
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 		addEventInfoForUnknownUser(evt, matches[algIdx], matches[keyIdx])
 		if err := config.eventW.Write(evt); err != nil {
 			// NOTE(jaosorior): Not being able to write audit events
@@ -275,11 +245,7 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 	if idMatches == nil {
 		logger.Infoln("b: got login entry with no matches for certificate identifiers")
 
-<<<<<<< HEAD:internal/processors/processentry.go
-		config.Metrics.IncLogins(metrics.SSHCertLogin, metrics.Success)
-=======
 		config.metrics.IncLogins(metrics.SSHCertLogin, metrics.Success)
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 
 		addEventInfoForUnknownUser(evt, matches[algIdx], matches[keyIdx])
 		if err := config.eventW.Write(evt); err != nil {
@@ -320,13 +286,8 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 	}
 
 	// Increment metric even if it fails to write the event
-<<<<<<< HEAD:internal/processors/processentry.go
-	config.Metrics.IncLogins(metrics.SSHCertLogin, metrics.Success)
-	if err := config.EventW.Write(evt); err != nil {
-=======
 	config.metrics.IncLogins(metrics.SSHCertLogin, metrics.Success)
 	if err := config.eventW.Write(evt); err != nil {
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 		// NOTE(jaosorior): Not being able to write audit events
 		// merits us panicking here.
 		return fmt.Errorf("failed to write event: %w", err)
@@ -403,13 +364,8 @@ func processCertificateInvalidEntry(config *SshdProcessor) error {
 	}
 
 	// Increment metric even if it fails to write the event
-<<<<<<< HEAD:internal/processors/processentry.go
-	config.Metrics.IncLogins(metrics.SSHCertLogin, metrics.Failure)
-	if err := config.EventW.Write(evt); err != nil {
-=======
 	config.metrics.IncLogins(metrics.SSHCertLogin, metrics.Failure)
 	if err := config.eventW.Write(evt); err != nil {
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 		// NOTE(jaosorior): Not being able to write audit events
 		// merits us error-ing here.
 		return fmt.Errorf("failed to write event: %w", err)
@@ -457,17 +413,10 @@ func processNotInAllowUsersEntry(config *SshdProcessor) error {
 	})
 
 	// Increment metric even if it fails to write the event
-<<<<<<< HEAD:internal/processors/processentry.go
-	config.Metrics.IncLogins(metrics.UnknownLogin, metrics.Failure)
-
-	evt.LoggedAt = config.When
-	if err := config.EventW.Write(evt); err != nil {
-=======
 	config.metrics.IncLogins(metrics.UnknownLogin, metrics.Failure)
 
 	evt.LoggedAt = config.when
 	if err := config.eventW.Write(evt); err != nil {
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 		// NOTE(jaosorior): Not being able to write audit events
 		// merits us error-ing here.
 		return fmt.Errorf("failed to write event: %w", err)
@@ -509,17 +458,10 @@ func processInvalidUserEntry(config *SshdProcessor) error {
 	})
 
 	// Increment metric even if it fails to write the event
-<<<<<<< HEAD:internal/processors/processentry.go
-	config.Metrics.IncLogins(metrics.UnknownLogin, metrics.Failure)
-
-	evt.LoggedAt = config.When
-	if err := config.EventW.Write(evt); err != nil {
-=======
 	config.metrics.IncLogins(metrics.UnknownLogin, metrics.Failure)
 
 	evt.LoggedAt = config.when
 	if err := config.eventW.Write(evt); err != nil {
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor.go
 		// NOTE(jaosorior): Not being able to write audit events
 		// merits us error-ing here.
 		return fmt.Errorf("failed to write event: %w", err)

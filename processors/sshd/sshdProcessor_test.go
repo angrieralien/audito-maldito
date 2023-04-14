@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/metal-toolbox/audito-maldito/internal/common"
-	"github.com/metal-toolbox/audito-maldito/internal/metrics"
+	"github.com/metal-toolbox/audito-maldito/processors/metrics"
 )
 
 // Refer to "go doc -all testing" for more information.
@@ -357,18 +357,7 @@ func TestEntryProcessing(t *testing.T) {
 			w := auditevent.NewAuditEventWriter(enc)
 
 			logins := make(chan common.RemoteUserLogin, 1)
-<<<<<<< HEAD:internal/processors/processentry_test.go
-			err := ProcessEntry(&ProcessEntryConfig{
-				Ctx:       ctx,
-				Logins:    logins,
-				LogEntry:  tt.args.logentry,
-				NodeName:  tt.args.nodename,
-				MachineID: tt.args.mid,
-				When:      expectedts,
-				Pid:       tt.args.pid,
-				EventW:    w,
-				Metrics:   metrics.NewPrometheusMetricsProviderForRegisterer(pr),
-=======
+			pprov := metrics.NewPrometheusMetricsProviderForRegisterer(pr)
 			err := ProcessEntry(&SshdProcessor{
 				ctx:       ctx,
 				logins:    logins,
@@ -378,7 +367,7 @@ func TestEntryProcessing(t *testing.T) {
 				when:      expectedts,
 				pid:       tt.args.pid,
 				eventW:    w,
->>>>>>> namedpipe abstraction:processors/sshd/sshdProcessor_test.go
+				metrics:   pprov,
 			})
 			assert.NoError(t, err)
 

@@ -13,11 +13,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/metal-toolbox/audito-maldito/internal/common"
-<<<<<<< HEAD:internal/journald/reader.go
-	"github.com/metal-toolbox/audito-maldito/internal/metrics"
-	"github.com/metal-toolbox/audito-maldito/internal/processors"
-=======
->>>>>>> namedpipe abstraction:ingesters/journald/reader.go
 	"github.com/metal-toolbox/audito-maldito/internal/util"
 	"github.com/metal-toolbox/audito-maldito/processors/metrics"
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
@@ -35,18 +30,6 @@ func SetLogger(l *zap.SugaredLogger) {
 }
 
 type Processor struct {
-<<<<<<< HEAD:internal/journald/reader.go
-	BootID    string
-	MachineID string
-	NodeName  string
-	Distro    util.DistroType
-	EventW    *auditevent.EventWriter
-	Logins    chan<- common.RemoteUserLogin
-	CurrentTS uint64 // Microseconds since unix epoch.
-	Health    *common.Health
-	Metrics   *metrics.PrometheusMetricsProvider
-	jr        JournalReader
-=======
 	BootID        string
 	MachineID     string
 	NodeName      string
@@ -58,7 +41,6 @@ type Processor struct {
 	jr            JournalReader
 	SshdProcessor sshd.SshdProcessor
 	Metrics       *metrics.PrometheusMetricsProvider
->>>>>>> namedpipe abstraction:ingesters/journald/reader.go
 }
 
 func (jp *Processor) getJournalReader() JournalReader {
@@ -168,22 +150,9 @@ func (jp *Processor) readEntry(ctx context.Context) error {
 	usec := entry.GetTimeStamp()
 	jp.CurrentTS = usec
 
-<<<<<<< HEAD:internal/journald/reader.go
-	err := processors.ProcessEntry(&processors.ProcessEntryConfig{
-		Ctx:       ctx,
-		Logins:    jp.Logins,
-		LogEntry:  entryMsg,
-		NodeName:  jp.NodeName,
-		MachineID: jp.MachineID,
-		When:      time.UnixMicro(int64(usec)),
-		Pid:       entry.GetPID(),
-		EventW:    jp.EventW,
-		Metrics:   jp.Metrics,
-=======
 	err := jp.SshdProcessor.ProcessSshdLogEntry(ctx, sshd.SshdLogEntry{
 		Message: entryMsg,
 		PID:     entry.GetPID(),
->>>>>>> namedpipe abstraction:ingesters/journald/reader.go
 	})
 	if err != nil {
 		return fmt.Errorf("failed to process journal entry '%s': %w", entryMsg, err)
