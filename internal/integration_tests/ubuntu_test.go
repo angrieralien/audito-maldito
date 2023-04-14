@@ -92,7 +92,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 		appErrs <- cmd.Run(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
 	}()
 
-	err := appHealth.WaitForReadyCtxOrTimeout(ctx, time.Minute)
+	err = appHealth.WaitForReadyCtxOrTimeout(ctx, time.Minute)
 	if err != nil {
 		t.Fatalf("failed to wait for app to become ready - %s", err)
 	}
