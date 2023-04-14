@@ -4,11 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/go-logr/zapr"
 	"github.com/metal-toolbox/auditevent"
 	"github.com/metal-toolbox/auditevent/helpers"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -19,6 +21,7 @@ import (
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/internal/util"
 	"github.com/metal-toolbox/audito-maldito/processors/auditd"
+	"github.com/metal-toolbox/audito-maldito/processors/metrics"
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
@@ -39,6 +42,8 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	var appEventsOutput string
 	var auditdLogFilePath string
 	var sshdLogFilePath string
+	var enableMetrics bool
+
 	logLevel := zapcore.DebugLevel // TODO: Switch default back to zapcore.ErrorLevel.
 
 	flagSet := flag.NewFlagSet(osArgs[0], flag.ContinueOnError)
@@ -46,6 +51,7 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 	// This is just needed for testing purposes. If it's empty we'll use the current boot ID
 	flagSet.StringVar(&bootID, "boot-id", "", "Optional Linux boot ID to use when reading from the journal")
 	flagSet.Var(&logLevel, "log-level", "Set the log level according to zapcore.Level")
+	flagSet.BoolVar(&enableMetrics, "metrics", false, "Enable Prometheus HTTP /metrics server")
 	flagSet.StringVar(
 		&appEventsOutput,
 		"app-events-output",
@@ -120,12 +126,31 @@ func Run(ctx context.Context, osArgs []string, h *common.Health, optLoggerConfig
 
 	eventWriter := auditevent.NewDefaultAuditEventWriter(auf)
 	logins := make(chan common.RemoteUserLogin)
+	pprov := metrics.NewPrometheusMetricsProvider()
+
+	if enableMetrics {
+		server := &http.Server{Addr: ":2112"}
+		eg.Go(func() error {
+			http.Handle("/metrics", promhttp.Handler())
+			logger.Infoln("Starting HTTP metrics server on :2112")
+			if err := server.ListenAndServe(); err != nil {
+				logger.Errorf("Failed to start HTTP metrics server: %v", err)
+				return err
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			<-groupCtx.Done()
+			logger.Infoln("Stopping HTTP metrics server")
+			return server.Shutdown(groupCtx)
+		})
+	}
 
 	logger.Infoln("starting workers...")
 
 	h.AddReadiness()
 	eg.Go(func() error {
-		sshdProcessor := sshd.NewSshdProcessor(groupCtx, logins, nodeName, mid, eventWriter)
+		sshdProcessor := sshd.NewSshdProcessor(groupCtx, logins, nodeName, mid, eventWriter, pprov)
 
 		if distro == util.DistroRocky {
 			rp := rocky.RockyProcessor{FilePath: sshdLogFilePath, SshdProcessor: *sshdProcessor, Logger: logger, Health: h}

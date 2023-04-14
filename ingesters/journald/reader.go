@@ -14,6 +14,7 @@ import (
 
 	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/internal/util"
+	"github.com/metal-toolbox/audito-maldito/processors/metrics"
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
@@ -39,6 +40,7 @@ type Processor struct {
 	Health        *common.Health
 	jr            JournalReader
 	SshdProcessor sshd.SshdProcessor
+	Metrics       *metrics.PrometheusMetricsProvider
 }
 
 func (jp *Processor) getJournalReader() JournalReader {

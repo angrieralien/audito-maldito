@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/metal-toolbox/audito-maldito/internal/common"
+	"github.com/metal-toolbox/audito-maldito/processors/metrics"
 )
 
 func NewSshdProcessor(
@@ -21,6 +22,7 @@ func NewSshdProcessor(
 	nodeName string,
 	machineID string,
 	eventW *auditevent.EventWriter,
+	metrics *metrics.PrometheusMetricsProvider,
 ) *SshdProcessor {
 	return &SshdProcessor{
 		ctx:       ctx,
@@ -28,6 +30,7 @@ func NewSshdProcessor(
 		nodeName:  nodeName,
 		machineID: machineID,
 		eventW:    eventW,
+		metrics:   metrics,
 	}
 }
 
@@ -40,6 +43,7 @@ type SshdProcessor struct {
 	when      time.Time
 	pid       string
 	eventW    *auditevent.EventWriter
+	metrics   *metrics.PrometheusMetricsProvider
 }
 
 func (s *SshdProcessor) ProcessSshdLogEntry(ctx context.Context, sm SshdLogEntry) error {
@@ -169,7 +173,7 @@ func addEventInfoForUnknownUser(evt *auditevent.AuditEvent, alg, keySum string) 
 func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 	matches := loginRE.FindStringSubmatch(config.logEntry)
 	if matches == nil {
-		logger.Infoln("got login entry with no matches for identifiers")
+		logger.Infoln("got login entry with no regular expression matches for identifiers")
 		return nil
 	}
 
@@ -208,10 +212,13 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 
 	evt.LoggedAt = config.when
 
+	// SSHLogin
 	if len(config.logEntry) == len(matches[0]) {
 		// TODO: This log message is incorrect... but I am not sure
 		//  what this logic is trying to accomplish.
 		logger.Infoln("a: got login entry with no matches for certificate identifiers")
+		// Increment metric even if it fails to write the event
+		config.metrics.IncLogins(metrics.SSHKeyLogin, metrics.Success)
 		addEventInfoForUnknownUser(evt, matches[algIdx], matches[keyIdx])
 		if err := config.eventW.Write(evt); err != nil {
 			// NOTE(jaosorior): Not being able to write audit events
@@ -236,6 +243,9 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 	// RemoteUserLogin with extra padding
 	if idMatches == nil {
 		logger.Infoln("b: got login entry with no matches for certificate identifiers")
+
+		config.metrics.IncLogins(metrics.SSHCertLogin, metrics.Success)
+
 		addEventInfoForUnknownUser(evt, matches[algIdx], matches[keyIdx])
 		if err := config.eventW.Write(evt); err != nil {
 			// NOTE(jaosorior): Not being able to write audit events
@@ -274,6 +284,8 @@ func processAcceptPublicKeyEntry(config *SshdProcessor) error {
 		debugLogger.Debugln("writing event to auditevent writer...")
 	}
 
+	// Increment metric even if it fails to write the event
+	config.metrics.IncLogins(metrics.SSHCertLogin, metrics.Success)
 	if err := config.eventW.Write(evt); err != nil {
 		// NOTE(jaosorior): Not being able to write audit events
 		// merits us panicking here.
