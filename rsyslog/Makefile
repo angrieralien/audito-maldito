@@ -8,8 +8,8 @@ image:
 
 .PHONY: rsyslog
 rsyslog:
-	docker rm rsyslog && \
-	docker run -ti \
+	docker rm -f rsyslog && \
+	docker run -d -ti \
 	--name rsyslog  \
 	-v /run/systemd/journal:/run/systemd/journal \
 	-v /var/log/audito-maldito:/var/log/audito-maldito \
