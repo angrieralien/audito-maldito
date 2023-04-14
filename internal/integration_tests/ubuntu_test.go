@@ -49,6 +49,8 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	ctx, cancelFn := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancelFn()
 
+	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
+
 	appEventsOutputFilePath := "/app-audit/app-events-output-test.log"
 	readEventsErrs := createPipeAndReadEvents(t, ctx, appEventsOutputFilePath, onEventFn)
 
@@ -80,8 +82,6 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 			},
 		},
 	}
-
-	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
 
 	err := appHealth.WaitForReadyCtxOrTimeout(ctx, time.Minute)
 	if err != nil {
