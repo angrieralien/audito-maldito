@@ -27,4 +27,4 @@ am:
 	-v /etc/machine-id:/etc/machine-id:ro \
 	-v /etc/os-release:/etc/os-release:ro \
 	-v /app-audit:/app-audit \
-	 ghcr.io/metal-toolbox/audito-maldito-rsyslog:v0.0.1
+	 ghcr.io/metal-toolbox/audito-maldito:latest

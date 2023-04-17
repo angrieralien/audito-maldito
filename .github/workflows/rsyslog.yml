@@ -1,16 +1,15 @@
 name: Release
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-      - named-pipe-abstraction
     paths:
       - 'rsyslog/**'
 
 jobs:
   auto-release:
-    name: Create Release
+    name: Create rsyslog Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
