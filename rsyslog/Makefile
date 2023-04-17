@@ -13,7 +13,9 @@ rsyslog:
 	--name rsyslog  \
 	-v /run/systemd/journal:/run/systemd/journal \
 	-v /var/log:/var/log\
-	-v /etc/machine-id:/etc/machine-id:ro
+	-v /etc/machine-id:/etc/machine-id:ro \
+	-v config/rsyslog.conf:/etc/rsyslog.conf \
+	-v config/rsyslog.d:/etc/rsyslog.d \
 	 ghcr.io/metal-toolbox/audito-maldito-rsyslog:v0.0.1
 
 
