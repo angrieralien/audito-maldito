@@ -18,6 +18,7 @@ rsyslog:
 	-v config/rsyslog.d:/etc/rsyslog.d \
 	 ghcr.io/metal-toolbox/audito-maldito-rsyslog:v0.0.1
 
+
 .PHONY am
 am:
 	docker run  -ti \
