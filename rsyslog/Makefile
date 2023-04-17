@@ -17,3 +17,12 @@ rsyslog:
 	 ghcr.io/metal-toolbox/audito-maldito-rsyslog:v0.0.1
 
 
+.PHONY am
+am:
+	docker run  -ti \
+	--name am  \
+	-v /var/log:/var/log\
+	-v /etc/machine-id:/etc/machine-id:ro \
+	-v /etc/os-release:/etc/os-release:ro \
+	-v /app-audit:/app-audit \
+	 ghcr.io/metal-toolbox/audito-maldito-rsyslog:v0.0.1
