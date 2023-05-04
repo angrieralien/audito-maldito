@@ -1,6 +1,9 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"go.uber.org/zap/zapcore"
+)
 
 var config *appConfig
 var rootCmd = &cobra.Command{
@@ -64,8 +67,8 @@ func init() {
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel = 5
 `)
-
-	config.logLevel = config.logLevel
+	var ll zapcore.Level = zapcore.Level(*logLevel)
+	config.logLevel = ll
 	rootCmd.AddCommand(journaldCmd)
 	rootCmd.AddCommand(namedpipeCmd)
 }
