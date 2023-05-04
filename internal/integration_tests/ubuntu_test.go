@@ -89,7 +89,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 			"--audit-log-path",
 			"/app-audit/audit.log",
 			"--metrics",
-			"false"
+			"false",
 		}
 		appErrs <- cmd.Execute()
 	}()
