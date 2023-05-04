@@ -22,7 +22,9 @@ func Execute() error {
 }
 
 func init() {
-	config = &appConfig{}
+	config = &appConfig{
+		metricsConfig: metricsConfig{},
+	}
 	var logLevel *int
 
 	// This is just needed for testing purposes. If it's empty we'll use the current boot ID
