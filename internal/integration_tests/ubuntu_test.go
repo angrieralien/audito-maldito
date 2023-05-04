@@ -80,7 +80,17 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
-		os.Args = []string{"audito-maldito", "journald"}
+		os.Args = []string{"audito-maldito",
+			"journald",
+			"--audit-dir-path",
+			"/var/log/audit",
+			"--boot-id",
+			"",
+			"--audit-log-path",
+			"/app-audit/audit.log",
+			"--metrics",
+			"false"
+		}
 		appErrs <- cmd.Execute()
 	}()
 
