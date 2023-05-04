@@ -36,10 +36,10 @@ var (
 )
 
 var namedpipeCmd = &cobra.Command{
-	Use:   "journald",
-	Short: "Uses coreos/go-systemd code to access journald for data ingestion.",
-	Long: `Uses coreos/go-systemd code to access journald for data ingestion.
-	 Processes sshd logs and audit events.`,
+	Use:   "namedpipe",
+	Short: "Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.",
+	Long: `Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.
+	 Pipes must be created prior to opening the pipes.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
