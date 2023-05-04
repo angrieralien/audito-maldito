@@ -2,12 +2,15 @@ package cmd
 
 import (
 	"context"
-	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-logr/zapr"
 	"github.com/metal-toolbox/auditevent"
 	"github.com/metal-toolbox/auditevent/helpers"
+	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -24,52 +27,53 @@ import (
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
-func RunNamedPipe(ctx context.Context, osArgs []string, h *health.Health, optLoggerConfig *zap.Config) error {
-	var appEventsOutput string
-	var auditdLogFilePath string
-	var sshdLogFilePath string
-	var enableMetrics bool
-	var metricsConfig metricsConfig
+var (
+	appEventsOutput   string
+	auditdLogFilePath string
+	sshdLogFilePath   string
+	metricsCfg        metricsConfig
+)
 
-	logLevel := zapcore.InfoLevel
+var namedpipeCmd = &cobra.Command{
+	Use:   "journald",
+	Short: "Uses coreos/go-systemd code to access journald for data ingestion.",
+	Long: `Uses coreos/go-systemd code to access journald for data ingestion.
+	 Processes sshd logs and audit events.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		RunNamedPipe(ctx, config, health.NewHealth(), nil)
+	},
+}
 
-	flagSet := flag.NewFlagSet(osArgs[0], flag.ContinueOnError)
-
-	flagSet.Var(&logLevel, "log-level", "Set the log level according to zapcore.Level")
-	flagSet.BoolVar(&metricsConfig.enableMetrics, "metrics", false, "Enable Prometheus HTTP /metrics server")
-	flagSet.BoolVar(&metricsConfig.enableHealthz, "healthz", false, "Enable HTTP health endpoints server")
-	flagSet.DurationVar(&metricsConfig.httpServerReadTimeout, "http-server-read-timeout",
-		DefaultHTTPServerReadTimeout, "HTTP server read timeout")
-	flagSet.DurationVar(&metricsConfig.httpServerReadHeaderTimeout, "http-server-read-header-timeout",
-		DefaultHTTPServerReadHeaderTimeout, "HTTP server read header timeout")
-	flagSet.BoolVar(&enableMetrics, "metrics", false, "Enable Prometheus HTTP /metrics server")
-	flagSet.StringVar(
+func init() {
+	namedpipeCmd.PersistentFlags().StringVar(
 		&appEventsOutput,
 		"app-events-output",
 		"/app-audit/app-events-output.log",
 		"Path to the app events output")
-	flagSet.StringVar(
+	namedpipeCmd.PersistentFlags().StringVar(
 		&sshdLogFilePath,
 		"sshd-log-file-path",
 		"/app/audit/sshd-pipe",
 		"Path to the sshd log file")
-	flagSet.StringVar(
+	namedpipeCmd.PersistentFlags().StringVar(
 		&auditdLogFilePath,
 		"auditd-log-file-path",
 		"/app-audit/audit-pipe",
 		"Path to the audit log file")
 
-	err := flagSet.Parse(osArgs[1:])
-	if err != nil {
-		return err
-	}
+}
+
+func RunNamedPipe(ctx context.Context, appCfg *appConfig, h *health.Health, optLoggerConfig *zap.Config) error {
 
 	if optLoggerConfig == nil {
 		cfg := zap.NewProductionConfig()
 		optLoggerConfig = &cfg
 	}
 
-	optLoggerConfig.Level = zap.NewAtomicLevelAt(logLevel)
+	var ll zapcore.Level = config.logLevel
+	optLoggerConfig.Level = zap.NewAtomicLevelAt(ll)
 
 	l, err := optLoggerConfig.Build()
 	if err != nil {
@@ -114,7 +118,7 @@ func RunNamedPipe(ctx context.Context, osArgs []string, h *health.Health, optLog
 	pprov := metrics.NewPrometheusMetricsProvider()
 
 	logger.Infoln("starting workers...")
-	handleMetricsAndHealth(groupCtx, metricsConfig, eg, h)
+	handleMetricsAndHealth(groupCtx, metricsCfg, eg, h)
 
 	h.AddReadiness(namedpipe.NamedPipeProcessorComponentName)
 	eg.Go(func() error {

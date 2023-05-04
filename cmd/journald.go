@@ -3,11 +3,15 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-logr/zapr"
 	"github.com/metal-toolbox/auditevent"
 	"github.com/metal-toolbox/auditevent/helpers"
+	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
@@ -21,11 +25,19 @@ import (
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
-func RunJournald(ctx context.Context, osArgs []string, h *health.Health, optLoggerConfig *zap.Config) error {
-	appCfg, err := parseFlags(osArgs)
-	if err != nil {
-		return fmt.Errorf("failed to parse flags: %w", err)
-	}
+var journaldCmd = &cobra.Command{
+	Use:   "journald",
+	Short: "Uses coreos/go-systemd code to access journald for data ingestion.",
+	Long: `Uses coreos/go-systemd code to access journald for data ingestion.
+	 Processes sshd logs and audit events.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		RunJournald(ctx, config, health.NewHealth(), nil)
+	},
+}
+
+func RunJournald(ctx context.Context, appCfg *appConfig, h *health.Health, optLoggerConfig *zap.Config) error {
 
 	if optLoggerConfig == nil {
 		cfg := zap.NewProductionConfig()
