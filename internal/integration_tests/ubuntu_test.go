@@ -80,6 +80,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
+		os.Args = []string{"audito-maldito", "--journald"}
 		appErrs <- cmd.Execute()
 	}()
 
