@@ -25,7 +25,7 @@ func init() {
 	config = &appConfig{
 		metricsConfig: metricsConfig{},
 	}
-	var logLevel *int
+	var logLevel int = 0
 
 	// This is just needed for testing purposes. If it's empty we'll use the current boot ID
 	rootCmd.PersistentFlags().StringVar(
@@ -79,7 +79,7 @@ func init() {
 		DefaultAuditModifyTimeThreshold,
 		"seconds since last write to audit.log before alerting")
 	rootCmd.PersistentFlags().IntVar(
-		logLevel,
+		&logLevel,
 		"log-level",
 		0,
 		`Set the log level according to zapcore.Level:
@@ -102,7 +102,7 @@ func init() {
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel = 5
 `)
-	var ll zapcore.Level = zapcore.Level(*logLevel)
+	var ll zapcore.Level = zapcore.Level(logLevel)
 	config.logLevel = ll
 	rootCmd.AddCommand(journaldCmd)
 	rootCmd.AddCommand(namedpipeCmd)
