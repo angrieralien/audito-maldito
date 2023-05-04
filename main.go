@@ -4,9 +4,13 @@
 package main
 
 import (
+	"log"
+
 	"github.com/metal-toolbox/audito-maldito/cmd"
 )
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		log.Fatalln("fatal:", err)
+	}
 }

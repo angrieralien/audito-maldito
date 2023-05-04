@@ -5,14 +5,16 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var config *appConfig
-var rootCmd = &cobra.Command{
-	Use:   "audito-maldito",
-	Short: "Hugo is a very fast static site generator",
-	Long: `audito-maldito is a daemon that monitors OpenSSH server logins and
+var (
+	config  *appConfig
+	rootCmd = &cobra.Command{
+		Use:   "audito-maldito",
+		Short: "Hugo is a very fast static site generator",
+		Long: `audito-maldito is a daemon that monitors OpenSSH server logins and
 	produces structured audit events describing what authenticated users
 	did while logged in (e.g., what programs they executed).`,
-}
+	}
+)
 
 // Execute executes the root command.
 func Execute() error {
@@ -24,18 +26,46 @@ func init() {
 	var logLevel *int
 
 	// This is just needed for testing purposes. If it's empty we'll use the current boot ID
-	rootCmd.PersistentFlags().StringVar(&config.bootID, "boot-id", "", "Optional Linux boot ID to use when reading from the journal")
-	rootCmd.PersistentFlags().StringVar(&config.auditlogpath, "audit-log-path", "/app-audit/audit.log", "Path to the audit log file")
-	rootCmd.PersistentFlags().StringVar(&config.auditLogDirPath, "audit-dir-path", "/var/log/audit",
+	rootCmd.PersistentFlags().StringVar(
+		&config.bootID,
+		"boot-id",
+		"",
+		"Optional Linux boot ID to use when reading from the journal")
+	rootCmd.PersistentFlags().StringVar(
+		&config.auditlogpath,
+		"audit-log-path",
+		"/app-audit/audit.log",
+		"Path to the audit log file")
+	rootCmd.PersistentFlags().StringVar(
+		&config.auditLogDirPath,
+		"audit-dir-path",
+		"/var/log/audit",
 		"Path to the Linux audit log directory")
-
-	rootCmd.PersistentFlags().BoolVar(&config.metricsConfig.enableMetrics, "metrics", false, "Enable Prometheus HTTP /metrics server")
-	rootCmd.PersistentFlags().BoolVar(&config.metricsConfig.enableHealthz, "healthz", false, "Enable HTTP health endpoints server")
-	rootCmd.PersistentFlags().BoolVar(&config.metricsConfig.enableAuditMetrics, "audit-metrics", false, "Enable Prometheus audit metrics")
-	rootCmd.PersistentFlags().DurationVar(&config.metricsConfig.httpServerReadTimeout, "http-server-read-timeout",
-		DefaultHTTPServerReadTimeout, "HTTP server read timeout")
-	rootCmd.PersistentFlags().DurationVar(&config.metricsConfig.httpServerReadHeaderTimeout, "http-server-read-header-timeout",
-		DefaultHTTPServerReadHeaderTimeout, "HTTP server read header timeout")
+	rootCmd.PersistentFlags().BoolVar(
+		&config.metricsConfig.enableMetrics,
+		"metrics",
+		false,
+		"Enable Prometheus HTTP /metrics server")
+	rootCmd.PersistentFlags().BoolVar(
+		&config.metricsConfig.enableHealthz,
+		"healthz",
+		false,
+		"Enable HTTP health endpoints server")
+	rootCmd.PersistentFlags().BoolVar(
+		&config.metricsConfig.enableAuditMetrics,
+		"audit-metrics",
+		false,
+		"Enable Prometheus audit metrics")
+	rootCmd.PersistentFlags().DurationVar(
+		&config.metricsConfig.httpServerReadTimeout,
+		"http-server-read-timeout",
+		DefaultHTTPServerReadTimeout,
+		"HTTP server read timeout")
+	rootCmd.PersistentFlags().DurationVar(
+		&config.metricsConfig.httpServerReadHeaderTimeout,
+		"http-server-read-header-timeout",
+		DefaultHTTPServerReadHeaderTimeout,
+		"HTTP server read header timeout")
 	rootCmd.PersistentFlags().DurationVar(
 		&config.metricsConfig.auditMetricsSecondsInterval,
 		"audit-seconds-interval",
@@ -46,8 +76,11 @@ func init() {
 		"audit-log-last-modify-seconds-threshold",
 		DefaultAuditModifyTimeThreshold,
 		"seconds since last write to audit.log before alerting")
-
-	rootCmd.PersistentFlags().IntVar(logLevel, "log-level", 0, `Set the log level according to zapcore.Level:
+	rootCmd.PersistentFlags().IntVar(
+		logLevel,
+		"log-level",
+		0,
+		`Set the log level according to zapcore.Level:
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
 	DebugLevel = -1

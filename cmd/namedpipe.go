@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -42,7 +43,9 @@ var namedpipeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		RunNamedPipe(ctx, config, health.NewHealth(), nil)
+		if err := RunNamedPipe(ctx, config, health.NewHealth(), nil); err != nil {
+			log.Fatalln("fatal:", err)
+		}
 	},
 }
 
@@ -62,11 +65,9 @@ func init() {
 		"auditd-log-file-path",
 		"/app-audit/audit-pipe",
 		"Path to the audit log file")
-
 }
 
 func RunNamedPipe(ctx context.Context, appCfg *appConfig, h *health.Health, optLoggerConfig *zap.Config) error {
-
 	if optLoggerConfig == nil {
 		cfg := zap.NewProductionConfig()
 		optLoggerConfig = &cfg

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,12 +34,13 @@ var journaldCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		RunJournald(ctx, config, health.NewHealth(), nil)
+		if err := RunJournald(ctx, config, health.NewHealth(), nil); err != nil {
+			log.Fatalln("fatal:", err)
+		}
 	},
 }
 
 func RunJournald(ctx context.Context, appCfg *appConfig, h *health.Health, optLoggerConfig *zap.Config) error {
-
 	if optLoggerConfig == nil {
 		cfg := zap.NewProductionConfig()
 		optLoggerConfig = &cfg

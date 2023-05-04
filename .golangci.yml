@@ -29,7 +29,6 @@ linters:
     - exportloopref
     - forcetypeassert
     - gci
-    - gochecknoinits
     - gocognit
     - goconst
     - gocritic
