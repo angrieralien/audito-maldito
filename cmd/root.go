@@ -9,7 +9,7 @@ var (
 	config  *appConfig
 	rootCmd = &cobra.Command{
 		Use:   "audito-maldito",
-		Short: "Hugo is a very fast static site generator",
+		Short: "audito-maldito correlates sshd audit-events and tracks users sessions",
 		Long: `audito-maldito is a daemon that monitors OpenSSH server logins and
 	produces structured audit events describing what authenticated users
 	did while logged in (e.g., what programs they executed).`,
