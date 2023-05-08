@@ -35,21 +35,21 @@ var (
 	metricsCfg        metricsConfig
 )
 
-var namedpipeCmd = &cobra.Command{
-	Use:   "namedpipe",
-	Short: "Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.",
-	Long: `Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.
+func NewNamedpipeCmd() *cobra.Command {
+	namedpipeCmd := &cobra.Command{
+		Use:   "namedpipe",
+		Short: "Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.",
+		Long: `Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.
 	 Pipes must be created prior to opening the pipes.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
-		defer stop()
-		if err := RunNamedPipe(ctx, config, health.NewHealth(), nil); err != nil {
-			log.Fatalln("fatal:", err)
-		}
-	},
-}
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			if err := RunNamedPipe(ctx, config, health.NewHealth(), nil); err != nil {
+				log.Fatalln("fatal:", err)
+			}
+		},
+	}
 
-func init() {
 	namedpipeCmd.PersistentFlags().StringVar(
 		&appEventsOutput,
 		"app-events-output",
@@ -65,6 +65,11 @@ func init() {
 		"auditd-log-file-path",
 		"/app-audit/audit-pipe",
 		"Path to the audit log file")
+
+	return namedpipeCmd
+}
+
+func init() {
 }
 
 func RunNamedPipe(ctx context.Context, appCfg *appConfig, h *health.Health, optLoggerConfig *zap.Config) error {

@@ -102,6 +102,6 @@ func init() {
 	FatalLevel = 5
 `)
 
-	rootCmd.AddCommand(journaldCmd)
-	rootCmd.AddCommand(namedpipeCmd)
+	rootCmd.AddCommand(NewJournalCmd())
+	rootCmd.AddCommand(NewNamedpipeCmd())
 }

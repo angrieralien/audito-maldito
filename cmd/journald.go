@@ -27,18 +27,20 @@ import (
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
-var journaldCmd = &cobra.Command{
-	Use:   "journald",
-	Short: "Uses coreos/go-systemd code to access journald for data ingestion.",
-	Long: `Uses coreos/go-systemd code to access journald for data ingestion.
+func NewJournalCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "journald",
+		Short: "Uses coreos/go-systemd code to access journald for data ingestion.",
+		Long: `Uses coreos/go-systemd code to access journald for data ingestion.
 	 Processes sshd logs and audit events.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
-		defer stop()
-		if err := RunJournald(ctx, config, health.NewHealth(), nil); err != nil {
-			log.Fatalln("fatal:", err)
-		}
-	},
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			if err := RunJournald(ctx, config, health.NewHealth(), nil); err != nil {
+				log.Fatalln("fatal:", err)
+			}
+		},
+	}
 }
 
 func RunJournald(ctx context.Context, appCfg *appConfig, h *health.Health, optLoggerConfig *zap.Config) error {
