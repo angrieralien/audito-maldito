@@ -69,9 +69,6 @@ func NewNamedpipeCmd() *cobra.Command {
 	return namedpipeCmd
 }
 
-func init() {
-}
-
 func RunNamedPipe(ctx context.Context, appCfg *appConfig, h *health.Health, optLoggerConfig *zap.Config) error {
 	if optLoggerConfig == nil {
 		cfg := zap.NewProductionConfig()
