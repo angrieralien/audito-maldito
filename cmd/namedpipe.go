@@ -41,7 +41,7 @@ var namedpipeCmd = &cobra.Command{
 	Long: `Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.
 	 Pipes must be created prior to opening the pipes.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 		if err := RunNamedPipe(ctx, config, health.NewHealth(), nil); err != nil {
 			log.Fatalln("fatal:", err)

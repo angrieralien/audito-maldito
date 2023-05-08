@@ -32,7 +32,7 @@ var journaldCmd = &cobra.Command{
 	Long: `Uses coreos/go-systemd code to access journald for data ingestion.
 	 Processes sshd logs and audit events.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 		if err := RunJournald(ctx, config, health.NewHealth(), nil); err != nil {
 			log.Fatalln("fatal:", err)
