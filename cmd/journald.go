@@ -14,6 +14,7 @@ import (
 	"github.com/metal-toolbox/auditevent/helpers"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/metal-toolbox/audito-maldito/ingesters/journald"
@@ -45,8 +46,7 @@ func RunJournald(ctx context.Context, appCfg *appConfig, h *health.Health, optLo
 		cfg := zap.NewProductionConfig()
 		optLoggerConfig = &cfg
 	}
-
-	optLoggerConfig.Level = zap.NewAtomicLevelAt(appCfg.logLevel)
+	optLoggerConfig.Level = zap.NewAtomicLevelAt(zapcore.Level(appCfg.logLevel))
 
 	l, err := optLoggerConfig.Build()
 	if err != nil {

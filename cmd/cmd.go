@@ -10,7 +10,6 @@ import (
 	"github.com/metal-toolbox/auditevent"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/metal-toolbox/audito-maldito/ingesters/journald"
@@ -50,7 +49,7 @@ type appConfig struct {
 	auditlogpath    string
 	auditLogDirPath string
 	metricsConfig   metricsConfig
-	logLevel        zapcore.Level
+	logLevel        int
 }
 
 func runProcessorsForSSHLogins(

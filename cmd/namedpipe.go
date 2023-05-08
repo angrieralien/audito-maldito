@@ -73,8 +73,7 @@ func RunNamedPipe(ctx context.Context, appCfg *appConfig, h *health.Health, optL
 		optLoggerConfig = &cfg
 	}
 
-	var ll zapcore.Level = config.logLevel
-	optLoggerConfig.Level = zap.NewAtomicLevelAt(ll)
+	optLoggerConfig.Level = zap.NewAtomicLevelAt(zapcore.Level(appCfg.logLevel))
 
 	l, err := optLoggerConfig.Build()
 	if err != nil {
