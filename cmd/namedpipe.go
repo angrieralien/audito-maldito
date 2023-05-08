@@ -44,7 +44,7 @@ func NewNamedpipeCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			if err := RunNamedPipe(ctx, config, health.NewHealth(), nil); err != nil {
+			if err := RunNamedPipe(ctx, config, config.health, nil); err != nil {
 				log.Fatalln("fatal:", err)
 			}
 		},

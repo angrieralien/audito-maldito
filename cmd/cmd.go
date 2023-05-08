@@ -50,6 +50,7 @@ type appConfig struct {
 	auditLogDirPath string
 	metricsConfig   metricsConfig
 	logLevel        int
+	health          *health.Health
 }
 
 func runProcessorsForSSHLogins(

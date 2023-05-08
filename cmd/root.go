@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/metal-toolbox/audito-maldito/internal/health"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +18,8 @@ var (
 
 // Execute executes the root command.
 
-func Execute(args ...string) error {
+func Execute(appHealth *health.Health, args ...string) error {
+	config.health = appHealth
 	rootCmd.SetArgs(args)
 	return rootCmd.Execute()
 }

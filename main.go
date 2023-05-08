@@ -7,10 +7,12 @@ import (
 	"log"
 
 	"github.com/metal-toolbox/audito-maldito/cmd"
+	"github.com/metal-toolbox/audito-maldito/internal/health"
 )
 
 func main() {
-	if err := cmd.Execute(); err != nil {
+	appHealth := health.NewHealth()
+	if err := cmd.Execute(appHealth); err != nil {
 		log.Fatalln("fatal:", err)
 	}
 }
