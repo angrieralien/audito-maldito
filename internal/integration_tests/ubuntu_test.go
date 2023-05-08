@@ -69,20 +69,19 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 		},
 	}
 
-	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
-
-	readEventsErrs := createPipeAndReadEvents(t, ctx, "/app-audit/audit.log", onEventFn)
-
-	appHealth := health.NewHealth()
-
 	tmoutctx, tmoutctxFn := context.WithTimeout(ctx, time.Minute)
 	defer tmoutctxFn()
 
 	appErrs := make(chan error, 1)
 	go func() {
-		os.Args = []string{"audito-maldito", "journald"}
-		appErrs <- cmd.Execute()
+		appErrs <- cmd.Execute([]string{"audito-maldito", "journald"})
 	}()
+
+	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
+
+	readEventsErrs := createPipeAndReadEvents(t, ctx, "/app-audit/audit.log", onEventFn)
+
+	appHealth := health.NewHealth()
 
 	err := <-appHealth.WaitForReady(tmoutctx)
 	if err != nil {

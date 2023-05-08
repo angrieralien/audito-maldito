@@ -17,7 +17,8 @@ var (
 
 // Execute executes the root command.
 
-func Execute() error {
+func Execute(args ...string) error {
+	rootCmd.SetArgs(args)
 	return rootCmd.Execute()
 }
 
