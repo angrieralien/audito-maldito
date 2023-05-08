@@ -74,7 +74,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
-		appErrs <- cmd.Execute([]string{"audito-maldito", "journald"})
+		appErrs <- cmd.Execute("audito-maldito", "journald")
 	}()
 
 	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
