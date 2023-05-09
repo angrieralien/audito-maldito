@@ -24,10 +24,8 @@ const (
 	auditdRulesFilePath       = "/etc/audit/rules.d/audit.rules"
 )
 
-var (
-	//go:embed testdata/auditd-rules-ubuntu.rules
-	auditdRulesUbuntu string
-)
+//go:embed testdata/auditd-rules-ubuntu.rules
+var auditdRulesUbuntu string
 
 func TestMain(m *testing.M) {
 	u, err := user.Current()

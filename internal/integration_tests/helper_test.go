@@ -17,21 +17,9 @@ import (
 	"testing"
 
 	"github.com/metal-toolbox/auditevent"
-	"go.uber.org/zap"
 )
 
-var (
-	debug *log.Logger
-)
-
-func zapLoggerConfig() *zap.Config {
-	config := zap.NewDevelopmentConfig()
-	config.EncoderConfig = zap.NewDevelopmentEncoderConfig()
-	config.DisableStacktrace = true
-	config.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
-
-	return &config
-}
+var debug *log.Logger
 
 // setupSSHCertAccess generates a SSH CA and a private key for the current
 // user. It then issues an SSH certificate for the user's key pair.
@@ -91,7 +79,7 @@ func setupSSHCertAccess(t *testing.T, ctx context.Context, homeDirPath string) (
 	err = os.WriteFile(
 		testingSSHDConfigFilePath,
 		[]byte("TrustedUserCAKeys "+caPrivateKeyFilePath+".pub\n"),
-		0o700)
+		0o600)
 	if err != nil {
 		t.Fatalf("failed to write custom sshd config file - %s", err)
 	}
@@ -107,7 +95,7 @@ func setupSSHCertAccess(t *testing.T, ctx context.Context, homeDirPath string) (
 	if !bytes.Contains(sshdConfig, configIncludeDirective) {
 		sshdConfig = append(sshdConfig, configIncludeDirective...)
 
-		err = os.WriteFile("/etc/ssh/sshd_config", sshdConfig, 0o700)
+		err = os.WriteFile("/etc/ssh/sshd_config", sshdConfig, 0o600)
 		if err != nil {
 			t.Fatalf("failed to write updated sshd config file - %s", err)
 		}
@@ -141,9 +129,7 @@ func createPipeAndReadEvents(
 
 	catErrs := make(chan error, 1)
 	go func() {
-		defer func() {
-			log.Println("TODO: pipe reader exited")
-		}()
+		defer log.Println("TODO: pipe reader exited")
 
 		f, err := os.Open(eventsPipeFilePath)
 		if err != nil {
@@ -196,7 +182,9 @@ func createPipeAndReadEvents(
 //
 // It returns a channel will receive any errors related to checking
 // the pipeline and a callback function for use with createPipeAndReadEvents.
-func newShellPipelineChecker(ctx context.Context, pipeline []appToRun) (<-chan error, func(*auditevent.AuditEvent)) {
+func newShellPipelineChecker(
+	ctx context.Context, pipeline []appToRun) (c <-chan error, f func(*auditevent.AuditEvent),
+) {
 	if len(pipeline) == 0 {
 		panic("shell pipeline is empty")
 	}
@@ -284,7 +272,7 @@ func (o *shellPipelineChecker) onEvent(event *auditevent.AuditEvent) {
 //
 // The function returns a non-nil error if it encounters a value that
 // is not a string.
-func valueFromMetadataExtraMap(key string, metadataExtra map[string]any) (string, bool, error) {
+func valueFromMetadataExtraMap(key string, metadataExtra map[string]any) (s string, b bool, e error) {
 	v, hssIt := metadataExtra[key]
 	if !hssIt {
 		return "", false, nil
@@ -338,18 +326,23 @@ func execSSHPipeline(ctx context.Context, ourPrivateKeyPath string, pipeline []a
 	// is occurring in an ephemeral test setup via
 	// loopback. Normally, this would be a terrible
 	// idea - but it is OK here.
-	sshToLoopback := exec.CommandContext(ctx,
+	sshToLoopback := exec.CommandContext(
+		ctx,
 		"ssh",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "StrictHostKeyChecking=no",
 		"-i", ourPrivateKeyPath,
 		testingUser+"@127.0.0.1",
-		pipelineBuf.String())
+		pipelineBuf.String(),
+	)
 
 	err := execApp(sshToLoopback)
 	if err != nil {
-		return fmt.Errorf("ssh failure ('%s') - %s",
-			sshToLoopback.String(), err)
+		return fmt.Errorf(
+			"ssh failure ('%s') - %w",
+			sshToLoopback.String(),
+			err,
+		)
 	}
 
 	return nil

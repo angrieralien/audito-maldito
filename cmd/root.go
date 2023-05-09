@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/metal-toolbox/audito-maldito/internal/health"
 	"github.com/spf13/cobra"
+
+	"github.com/metal-toolbox/audito-maldito/internal/health"
 )
 
 var (
