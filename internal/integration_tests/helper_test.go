@@ -131,8 +131,6 @@ func createPipeAndReadEvents(
 
 	catErrs := make(chan error, 1)
 	go func() {
-		defer log.Println("TODO: pipe reader exited")
-
 		f, err := os.Open(eventsPipeFilePath)
 		if err != nil {
 			catErrs <- fmt.Errorf("failed to open named pipe - %w", err)
@@ -140,13 +138,10 @@ func createPipeAndReadEvents(
 		}
 		defer f.Close()
 
-		log.Printf("TODO: pipe opened")
-
 		go func() {
 			// Ensure that any blocking reads are unblocked when
 			// ctx is marked as done.
 			<-ctx.Done()
-			log.Println("TODO: pipe reader closed because context marked as done")
 			_ = f.Close()
 		}()
 
