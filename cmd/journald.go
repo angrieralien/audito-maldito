@@ -37,7 +37,7 @@ func NewJournalCmd() *cobra.Command {
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			if err := RunJournald(ctx, config, config.health, nil); err != nil {
-				log.Fatalln("fatal:", err)
+				log.Println("fatal:", err)
 			}
 		},
 	}

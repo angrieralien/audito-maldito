@@ -1,5 +1,3 @@
-//go:build int
-
 package integration_tests
 
 import (
@@ -141,23 +139,30 @@ func createPipeAndReadEvents(
 		t.Fatalf("failed to create events pipe - %s", err)
 	}
 
-	cat := exec.CommandContext(ctx, "cat", eventsPipeFilePath)
-
-	stdoutPipe, err := cat.StdoutPipe()
-	if err != nil {
-		t.Fatalf("failed to get stdout pipe for '%s' - %s", cat.String(), err)
-	}
-
-	err = cat.Start()
-	if err != nil {
-		t.Fatalf("failed to execute '%s' - %s", cat.String(), err)
-	}
-
 	catErrs := make(chan error, 1)
 	go func() {
-		defer stdoutPipe.Close()
+		defer func() {
+			log.Println("TODO: pipe reader exited")
+		}()
 
-		scanner := bufio.NewScanner(stdoutPipe)
+		f, err := os.Open(eventsPipeFilePath)
+		if err != nil {
+			catErrs <- fmt.Errorf("failed to open named pipe - %w", err)
+			return
+		}
+		defer f.Close()
+
+		log.Printf("TODO: pipe opened")
+
+		go func() {
+			// Ensure that any blocking reads are unblocked when
+			// ctx is marked as done.
+			<-ctx.Done()
+			log.Println("TODO: pipe reader closed because context marked as done")
+			_ = f.Close()
+		}()
+
+		scanner := bufio.NewScanner(f)
 
 		for scanner.Scan() {
 			select {
@@ -177,12 +182,6 @@ func createPipeAndReadEvents(
 			}
 
 			onEventFn(&event)
-		}
-
-		err = cat.Wait()
-		if err != nil {
-			catErrs <- err
-			return
 		}
 
 		catErrs <- scanner.Err()

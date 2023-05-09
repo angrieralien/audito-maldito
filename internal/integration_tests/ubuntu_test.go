@@ -1,5 +1,3 @@
-//go:build int
-
 package integration_tests
 
 import (
@@ -104,6 +102,8 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	case err = <-checkPipelineErrs:
 		cancelFn()
 		<-appErrs
+
+		log.Printf("TODO: checkPipelineErrs (%v)", err)
 
 		if err != nil {
 			t.Fatalf("failed to check audit events for shell pipeline - %s", err)
