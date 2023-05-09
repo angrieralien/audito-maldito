@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,18 +26,18 @@ import (
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
+var cc chan error
+
 func NewJournalCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "journald",
 		Short: "Uses coreos/go-systemd code to access journald for data ingestion.",
 		Long: `Uses coreos/go-systemd code to access journald for data ingestion.
 	 Processes sshd logs and audit events.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			if err := RunJournald(ctx, config, config.health, nil); err != nil {
-				log.Println("fatal:", err)
-			}
+			return RunJournald(ctx, config, config.health, nil)
 		},
 	}
 }

@@ -13,6 +13,6 @@ import (
 func main() {
 	appHealth := health.NewHealth()
 	if err := cmd.Execute(appHealth); err != nil {
-		log.Fatalln("fatal:", err)
+		log.Println("fatal:", err)
 	}
 }

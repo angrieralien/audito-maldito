@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,12 +40,10 @@ func NewNamedpipeCmd() *cobra.Command {
 		Short: "Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.",
 		Long: `Uses rsyslog for ingestion writing logs to namedpipe audito-maldito reads from.
 	 Pipes must be created prior to opening the pipes.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			if err := RunNamedPipe(ctx, config, config.health, nil); err != nil {
-				log.Fatalln("fatal:", err)
-			}
+			return RunNamedPipe(ctx, config, config.health, nil)
 		},
 	}
 
