@@ -23,6 +23,15 @@ import (
 
 var debug *log.Logger
 
+func zapLoggerConfig() *zap.Config {
+	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig = zap.NewDevelopmentEncoderConfig()
+	config.DisableStacktrace = true
+	config.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
+
+	return &config
+}
+
 // setupSSHCertAccess generates a SSH CA and a private key for the current
 // user. It then issues an SSH certificate for the user's key pair.
 func setupSSHCertAccess(t *testing.T, ctx context.Context, homeDirPath string) (userKeyPairPath string) {
