@@ -3,6 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-logr/zapr"
@@ -30,9 +33,9 @@ func NewJournalCmd() *cobra.Command {
 		Long: `Uses coreos/go-systemd code to access journald for data ingestion.
 	 Processes sshd logs and audit events.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			//ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
-			//defer stop()
-			return RunJournald(context.Background(), config, config.health, nil)
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			return RunJournald(ctx, config, config.health, nil)
 		},
 	}
 }
