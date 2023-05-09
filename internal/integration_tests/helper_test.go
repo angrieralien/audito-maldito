@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/metal-toolbox/auditevent"
+	"go.uber.org/zap"
 )
 
 var debug *log.Logger
