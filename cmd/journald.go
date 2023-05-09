@@ -26,8 +26,6 @@ import (
 	"github.com/metal-toolbox/audito-maldito/processors/sshd"
 )
 
-var cc chan error
-
 func NewJournalCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "journald",
