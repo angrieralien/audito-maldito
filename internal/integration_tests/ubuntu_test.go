@@ -103,8 +103,6 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 		cancelFn()
 		<-appErrs
 
-		log.Printf("TODO: checkPipelineErrs (%v)", err)
-
 		if err != nil {
 			t.Fatalf("failed to check audit events for shell pipeline - %s", err)
 		}
