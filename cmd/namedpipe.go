@@ -28,7 +28,6 @@ func RunNamedPipe(ctx context.Context, osArgs []string, h *health.Health, optLog
 	var appEventsOutput string
 	var auditdLogFilePath string
 	var sshdLogFilePath string
-	var enableMetrics bool
 	var metricsConfig metricsConfig
 
 	logLevel := zapcore.InfoLevel
@@ -42,7 +41,7 @@ func RunNamedPipe(ctx context.Context, osArgs []string, h *health.Health, optLog
 		DefaultHTTPServerReadTimeout, "HTTP server read timeout")
 	flagSet.DurationVar(&metricsConfig.httpServerReadHeaderTimeout, "http-server-read-header-timeout",
 		DefaultHTTPServerReadHeaderTimeout, "HTTP server read header timeout")
-	flagSet.BoolVar(&enableMetrics, "metrics", false, "Enable Prometheus HTTP /metrics server")
+
 	flagSet.StringVar(
 		&appEventsOutput,
 		"app-events-output",
@@ -51,7 +50,7 @@ func RunNamedPipe(ctx context.Context, osArgs []string, h *health.Health, optLog
 	flagSet.StringVar(
 		&sshdLogFilePath,
 		"sshd-log-file-path",
-		"/app/audit/sshd-pipe",
+		"/app-audit/sshd-pipe",
 		"Path to the sshd log file")
 	flagSet.StringVar(
 		&auditdLogFilePath,
@@ -140,10 +139,8 @@ func RunNamedPipe(ctx context.Context, osArgs []string, h *health.Health, optLog
 
 	h.AddReadiness(namedpipe.NamedPipeProcessorComponentName)
 	eg.Go(func() error {
-		alp := auditlog.AuditLogIngester{
-			FilePath:     auditdLogFilePath,
-			AuditLogChan: auditLogChan,
-		}
+		np := namedpipe.NewNamedPipeIngester(logger, h)
+		alp := auditlog.NewAuditLogIngester(auditdLogFilePath, auditLogChan, np)
 
 		err := alp.Ingest(groupCtx)
 		if logger.Level().Enabled(zap.DebugLevel) {
