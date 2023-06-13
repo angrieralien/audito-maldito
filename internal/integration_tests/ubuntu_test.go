@@ -71,7 +71,8 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	checkPipelineErrs, onEventFn := newShellPipelineChecker(ctx, expectedShellPipeline)
 
-	readEventsErrs := createPipeAndReadEvents(t, ctx, "/app-audit/audit.log", onEventFn)
+	appEventsOutputFilePath := "/app-audit/app-events-output-test.log"
+	readEventsErrs := createPipeAndReadEvents(t, ctx, appEventsOutputFilePath, onEventFn)
 
 	appHealth := health.NewHealth()
 
@@ -80,8 +81,16 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
-		appErrs <- cmd.RunJournald(ctx, []string{"audito-maldito"}, appHealth, zapLoggerConfig())
+		appErrs <- cmd.RunNamedPipe(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath, "--metrics", "true"}, appHealth, zapLoggerConfig())
+
 	}()
+
+	// let audito-maldito start
+	time.Sleep(30 * time.Second)
+	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
+
+	// Required by audito-maldito.
+	t.Setenv("NODE_NAME", "integration-test")
 
 	err := <-appHealth.WaitForReady(tmoutctx)
 	if err != nil {
