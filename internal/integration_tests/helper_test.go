@@ -269,6 +269,9 @@ func (o *shellPipelineChecker) onEvent(event *auditevent.AuditEvent) {
 		return
 	}
 
+	if debug != nil {
+		debug.Printf("how is set to#########################################: %+v", event)
+	}
 	o.index--
 
 	if o.index < 0 {
