@@ -28,7 +28,7 @@ func zapLoggerConfig() *zap.Config {
 	config := zap.NewDevelopmentConfig()
 	config.EncoderConfig = zap.NewDevelopmentEncoderConfig()
 	config.DisableStacktrace = true
-	config.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 
 	return &config
 }

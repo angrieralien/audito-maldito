@@ -78,7 +78,9 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	}()
 
 	// let audito-maldito start
+	log.Println("Waiting 30 seconds")
 	time.Sleep(30 * time.Second)
+	log.Println("Done Waiting 30 seconds")
 	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
 
 	tmoutctx, tmoutctxFn := context.WithTimeout(ctx, time.Minute)
