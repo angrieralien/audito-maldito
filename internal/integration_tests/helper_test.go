@@ -270,7 +270,7 @@ func (o *shellPipelineChecker) onEvent(event *auditevent.AuditEvent) {
 	}
 
 	if debug != nil {
-		debug.Printf("how is set to#########################################: %+v", event)
+		debug.Printf("index: %d, how is set to#########################################: %+v", o.index, event)
 	}
 	o.index--
 
