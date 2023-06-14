@@ -1,5 +1,3 @@
-//go:build int
-
 package integration_tests
 
 import (

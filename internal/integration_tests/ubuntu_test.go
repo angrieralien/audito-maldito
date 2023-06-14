@@ -1,5 +1,3 @@
-//go:build int
-
 package integration_tests
 
 import (
@@ -83,10 +81,18 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	time.Sleep(30 * time.Second)
 	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
 
+	tmoutctx, tmoutctxFn := context.WithTimeout(ctx, time.Minute)
+	defer tmoutctxFn()
+
+	err := <-appHealth.WaitForReady(tmoutctx)
+	if err != nil {
+		t.Fatalf("failed to wait for app to become ready - %s", err)
+	}
+
 	// Required by audito-maldito.
 	t.Setenv("NODE_NAME", "integration-test")
 
-	err := execSSHPipeline(ctx, ourPrivateKeyPath, expectedShellPipeline)
+	err = execSSHPipeline(ctx, ourPrivateKeyPath, expectedShellPipeline)
 	if err != nil {
 		t.Fatalf("failed to execute ssh pipeline - %s", err)
 	}

@@ -40,6 +40,7 @@ func (n *NamedPipeIngester) Ingest(
 	var err error
 	ready := make(chan struct{})
 
+	n.Health.OnReady(NamedPipeProcessorComponentName)
 	// os.OpenFile blocks. Put in go routine so we can gracefully exit.
 	go func() {
 		file, err = os.OpenFile(filePath, os.O_RDONLY, os.ModeNamedPipe)
@@ -59,7 +60,6 @@ func (n *NamedPipeIngester) Ingest(
 	n.Logger.Infof("Successfully opened %s", filePath)
 	defer file.Close()
 
-	n.Health.OnReady(NamedPipeProcessorComponentName)
 	r := bufio.NewReader(file)
 
 	for {
