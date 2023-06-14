@@ -174,6 +174,7 @@ func createPipeAndReadEvents(
 				return
 			}
 
+			log.Printf("Hey I received an event %v", scanner.Text())
 			onEventFn(&event)
 		}
 

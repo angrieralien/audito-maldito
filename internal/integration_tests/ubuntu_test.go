@@ -72,9 +72,12 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appHealth := health.NewHealth()
 
+	tmoutctx, tmoutctxFn := context.WithTimeout(ctx, time.Minute)
+	defer tmoutctxFn()
+
 	appErrs := make(chan error, 1)
 	go func() {
-		appErrs <- cmd.RunNamedPipe(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
+		appErrs <- cmd.RunNamedPipe(tmoutctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
 	}()
 
 	// let audito-maldito start
@@ -82,9 +85,6 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	time.Sleep(30 * time.Second)
 	log.Println("Done Waiting 30 seconds")
 	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
-
-	tmoutctx, tmoutctxFn := context.WithTimeout(ctx, time.Minute)
-	defer tmoutctxFn()
 
 	err := <-appHealth.WaitForReady(tmoutctx)
 	if err != nil {
