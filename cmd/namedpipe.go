@@ -31,7 +31,7 @@ func RunNamedPipe(ctx context.Context, osArgs []string, h *health.Health, optLog
 	var sshdLogFilePath string
 	var metricsConfig metricsConfig
 
-	logLevel := zapcore.DebugLevel
+	logLevel := zapcore.InfoLevel
 
 	flagSet := flag.NewFlagSet(osArgs[0], flag.ContinueOnError)
 

@@ -75,6 +75,8 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	tmoutctx, tmoutctxFn := context.WithTimeout(ctx, time.Minute)
 	defer tmoutctxFn()
 
+	debug = log.Default()
+
 	appErrs := make(chan error, 1)
 	go func() {
 		appErrs <- cmd.RunNamedPipe(tmoutctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
