@@ -85,7 +85,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	// let audito-maldito start
 	time.Sleep(30 * time.Second)
-	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
+	ourPrivateKeyPath = setupUbuntuComputer(t, ctx)
 
 	// Required by audito-maldito.
 	t.Setenv("NODE_NAME", "integration-test")
