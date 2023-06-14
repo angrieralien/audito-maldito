@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"flag"
 	"net/http"
 	"os"
 	"strconv"
@@ -10,10 +9,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/metal-toolbox/audito-maldito/internal/common"
 	"github.com/metal-toolbox/audito-maldito/internal/health"
 	"github.com/metal-toolbox/audito-maldito/internal/metrics"
 )
@@ -49,58 +46,6 @@ type metricsConfig struct {
 	httpServerReadHeaderTimeout      time.Duration
 	auditMetricsSecondsInterval      time.Duration
 	auditLogWriteTimeSecondThreshold int
-}
-
-type appConfig struct {
-	bootID          string
-	auditlogpath    string
-	auditLogDirPath string
-	metricsConfig   metricsConfig
-	logLevel        zapcore.Level
-}
-
-func parseFlags(osArgs []string) (*appConfig, error) {
-	flagSet := flag.NewFlagSet(osArgs[0], flag.ContinueOnError)
-
-	config := &appConfig{
-		logLevel: zapcore.InfoLevel,
-	}
-
-	// This is just needed for testing purposes. If it's empty we'll use the current boot ID
-	flagSet.StringVar(&config.bootID, "boot-id", "", "Optional Linux boot ID to use when reading from the journal")
-	flagSet.StringVar(&config.auditlogpath, "audit-log-path", "/app-audit/audit.log", "Path to the audit log file")
-	flagSet.StringVar(&config.auditLogDirPath, "audit-dir-path", "/var/log/audit",
-		"Path to the Linux audit log directory")
-	flagSet.Var(&config.logLevel, "log-level", "Set the log level according to zapcore.Level")
-	flagSet.BoolVar(&config.metricsConfig.enableMetrics, "metrics", false, "Enable Prometheus HTTP /metrics server")
-	flagSet.BoolVar(&config.metricsConfig.enableHealthz, "healthz", false, "Enable HTTP health endpoints server")
-	flagSet.BoolVar(&config.metricsConfig.enableAuditMetrics, "audit-metrics", false, "Enable Prometheus audit metrics")
-	flagSet.DurationVar(&config.metricsConfig.httpServerReadTimeout, "http-server-read-timeout",
-		DefaultHTTPServerReadTimeout, "HTTP server read timeout")
-	flagSet.DurationVar(&config.metricsConfig.httpServerReadHeaderTimeout, "http-server-read-header-timeout",
-		DefaultHTTPServerReadHeaderTimeout, "HTTP server read header timeout")
-	flagSet.DurationVar(
-		&config.metricsConfig.auditMetricsSecondsInterval,
-		"audit-seconds-interval",
-		DefaultAuditCheckInterval,
-		"Interval in seconds to collect audit metrics")
-	flagSet.IntVar(
-		&config.metricsConfig.auditLogWriteTimeSecondThreshold,
-		"audit-log-last-modify-seconds-threshold",
-		DefaultAuditModifyTimeThreshold,
-		"seconds since last write to audit.log before alerting")
-
-	flagSet.Usage = func() {
-		os.Stderr.WriteString(usage)
-		flagSet.PrintDefaults()
-		os.Exit(1)
-	}
-
-	if err := flagSet.Parse(osArgs[1:]); err != nil {
-		return nil, err
-	}
-
-	return config, nil
 }
 
 // handleMetricsAndHealth starts a HTTP server on port 2112 to serve metrics
@@ -142,44 +87,20 @@ func handleMetricsAndHealth(ctx context.Context, mc metricsConfig, eg *errgroup.
 	}
 }
 
-// lastReadJournalTimeStamp returns the last-read journal entry's timestamp
-// or a sensible default if the timestamp cannot be loaded.
-func lastReadJournalTimeStamp() uint64 {
-	lastRead, err := common.GetLastRead()
-	switch {
-	case err != nil:
-		lastRead = uint64(time.Now().UnixMicro())
-
-		logger.Warnf("failed to read last read timestamp for journal - "+
-			"reading from current time (reason: '%s')", err.Error())
-	case lastRead == 0:
-		lastRead = uint64(time.Now().UnixMicro())
-
-		logger.Info("last read timestamp for journal is zero - " +
-			"reading from current time")
-	default:
-		logger.Infof("last read timestamp for journal is: '%d'", lastRead)
-	}
-
-	return lastRead
-}
-
 func handleAuditLogMetrics(
 	ctx context.Context,
+	mc metricsConfig,
 	eg *errgroup.Group,
 	pprov *metrics.PrometheusMetricsProvider,
-	auditMetricsSecondsInterval time.Duration,
-	auditLogWriteTimeSecondThreshold int,
-	enableAuditMetrics bool,
 ) {
-	if !enableAuditMetrics {
+	if !mc.enableAuditMetrics {
 		return
 	}
 
 	auditLogFilePath := "/var/log/audit/audit.log"
 
 	eg.Go(func() error {
-		ticker := time.NewTicker(auditMetricsSecondsInterval)
+		ticker := time.NewTicker(mc.auditMetricsSecondsInterval)
 		defer ticker.Stop()
 
 		for {
@@ -191,10 +112,10 @@ func handleAuditLogMetrics(
 					continue
 				}
 
-				if time.Since(s.ModTime()).Seconds() > float64(auditLogWriteTimeSecondThreshold) {
-					pprov.SetAuditLogCheck(0, strconv.Itoa(auditLogWriteTimeSecondThreshold))
+				if time.Since(s.ModTime()).Seconds() > float64(mc.auditLogWriteTimeSecondThreshold) {
+					pprov.SetAuditLogCheck(0, strconv.Itoa(mc.auditLogWriteTimeSecondThreshold))
 				} else {
-					pprov.SetAuditLogCheck(1, strconv.Itoa(auditLogWriteTimeSecondThreshold))
+					pprov.SetAuditLogCheck(1, strconv.Itoa(mc.auditLogWriteTimeSecondThreshold))
 				}
 
 				pprov.SetAuditLogModifyTime(float64(s.ModTime().Unix()))
