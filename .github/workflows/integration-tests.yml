@@ -16,8 +16,8 @@ jobs:
           sudo apt update
           sudo apt install -y make rsyslog
           sudo cp contrib/rsyslog/config/rsyslog.conf /etc/rsyslog.conf
-          rm -rf /etc/rsyslog.d
-          mkdir /etc/rsyslog.d
+          sudo rm -rf /etc/rsyslog.d
+          sudo mkdir /etc/rsyslog.d
           sudo cp -r contrib/rsyslog/config/rsyslog.d/* /etc/rsyslog.d/
           sudo mkdir -p /var/log/audito-maldito
           sudo mkdir -p /app-audit
