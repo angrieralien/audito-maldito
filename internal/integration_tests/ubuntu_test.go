@@ -79,8 +79,7 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 
 	appErrs := make(chan error, 1)
 	go func() {
-		appErrs <- cmd.RunNamedPipe(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath, "--metrics", "true"}, appHealth, zapLoggerConfig())
-
+		appErrs <- cmd.RunNamedPipe(ctx, []string{"audito-maldito", "--app-events-output", appEventsOutputFilePath}, appHealth, zapLoggerConfig())
 	}()
 
 	// let audito-maldito start
