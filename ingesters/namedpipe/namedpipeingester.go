@@ -57,6 +57,11 @@ func (n *NamedPipeIngester) Ingest(
 		return err
 	}
 
+	go func() {
+		<-ctx.Done()
+		file.Close()
+	}()
+
 	n.Logger.Infof("Successfully opened %s", filePath)
 	defer file.Close()
 
