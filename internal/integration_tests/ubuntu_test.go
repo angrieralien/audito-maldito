@@ -49,8 +49,6 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	ctx, cancelFn := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancelFn()
 
-	ourPrivateKeyPath := setupUbuntuComputer(t, ctx)
-
 	// Required by audito-maldito.
 	t.Setenv("NODE_NAME", "integration-test")
 
