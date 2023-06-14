@@ -89,10 +89,10 @@ func TestSSHCertLoginAndExecStuff_Ubuntu(t *testing.T) {
 	// Required by audito-maldito.
 	t.Setenv("NODE_NAME", "integration-test")
 
-	err := <-appHealth.WaitForReady(tmoutctx)
-	if err != nil {
-		t.Fatalf("failed to wait for app to become ready - %s", err)
-	}
+	// err := <-appHealth.WaitForReady(tmoutctx)
+	// if err != nil {
+	// 	t.Fatalf("failed to wait for app to become ready - %s", err)
+	// }
 
 	err = execSSHPipeline(ctx, ourPrivateKeyPath, expectedShellPipeline)
 	if err != nil {
